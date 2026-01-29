@@ -1,0 +1,82 @@
+Nuvem de Palavras HTML = 
+-- CORREÇÃO 1: Iterar apenas sobre as Descriçãos distintas, não a tabela inteira
+VAR _TabelaAlvo = VALUES(Gastos[Descrição]) 
+
+-- CORREÇÃO 2: Garantir que Min/Max usem a mesma lógica que será usada no tamanho
+VAR _MinVal = MINX(ALLSELECTED(Gastos[Descrição]), [Total Gastos])
+VAR _MaxVal = MAXX(ALLSELECTED(Gastos[Descrição]), [Total Gastos])
+VAR _Diff = _MaxVal - _MinVal
+
+-- Configuração de Tamanhos (em Pixels)
+VAR _MinFont = 14
+VAR _MaxFont = 46
+
+-- 1. Definição do CSS (Estilo Bradesco)
+VAR _CSS = "
+<style>
+    .container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+        padding: 10px;
+        font-family: 'Segoe UI', 'Inter', sans-serif;
+    }
+    .term {
+        line-height: 1.0;
+        cursor: default;
+        transition: transform 0.2s;
+    }
+    .term:hover {
+        transform: scale(1.1);
+        opacity: 0.9;
+    }
+    
+    /* Degradê Bradesco */
+    .brand-gradient {
+        background: linear-gradient(135deg, #CC092F 0%, #F53468 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 800;
+        text-shadow: 0px 2px 10px rgba(245, 52, 104, 0.1);
+    }
+    
+    .brand-solid { color: #CC092F; font-weight: 700; }
+    .neutral { color: #555555; font-weight: 500; }
+</style>
+"
+
+-- 2. Construção dos Spans
+VAR _HTML_Content = 
+    CONCATENATEX(
+        _TabelaAlvo,
+        -- CORREÇÃO 3: Usar a MESMA medida usada no Min/Max ([Total Gastos])
+        VAR _ValorAtual = [Total Gastos] 
+        
+        -- Proteção contra divisão por zero se _Diff for 0 (caso só haja 1 Descrição)
+        VAR _Score = IF(_Diff = 0, 1, DIVIDE(_ValorAtual - _MinVal, _Diff, 0))
+        VAR _FontSize = INT(_MinFont + (_Score * (_MaxFont - _MinFont)))
+        
+        VAR _Class = 
+            SWITCH(TRUE(),
+                _Score >= 0.8, "brand-gradient", 
+                _Score >= 0.4, "brand-solid",    
+                "neutral"                        
+            )
+            
+        RETURN
+            -- Adicionei o title para mostrar o valor ao passar o mouse
+            "<span class='term " & _Class & "' " & 
+            "title='R$ " & FORMAT(_ValorAtual, "#,##0.00") & "' " & 
+            "style='font-size:" & _FontSize & "px;'>" & 
+            Gastos[Descrição] & 
+            "</span>",
+        " " 
+    )
+
+RETURN
+    _CSS & 
+    "<div class='container'>" & 
+    _HTML_Content & 
+    "</div>"

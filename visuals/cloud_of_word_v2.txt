@@ -1,0 +1,99 @@
+Nuvem de Palavras Animada = 
+-- 1. Definição da Tabela e Valores
+VAR _TabelaAlvo = VALUES(Gastos[Descrição]) 
+VAR _MinVal = MINX(ALLSELECTED(Gastos[Descrição]), [Total Gastos])
+VAR _MaxVal = MAXX(ALLSELECTED(Gastos[Descrição]), [Total Gastos])
+VAR _Diff = _MaxVal - _MinVal
+
+-- 2. Configuração de Tamanhos (px)
+VAR _MinFont = 14
+VAR _MaxFont = 46
+
+-- 3. Definição do CSS com ANIMAÇÃO FLUIDA
+VAR _CSS = "
+<style>
+    @keyframes popIn {
+        0% { opacity: 0; transform: scale(0.5) translateY(10px); }
+        100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    
+    .container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 12px; /* Aumentei o gap para dar mais espaço */
+        padding: 15px;
+        font-family: 'Segoe UI', 'Inter', sans-serif;
+    }
+    
+    .term {
+        line-height: 1.0;
+        cursor: pointer;
+        display: inline-block;
+        position: relative;
+        
+        /* Estado base explícito */
+        opacity: 1;
+        transform: scale(1);
+        z-index: 1;
+        
+        /* Animação de entrada */
+        animation: popIn 0.6s ease-out backwards;
+        
+        /* Transição suave para hover, transform E filter */
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                    filter 0.3s ease,
+                    z-index 0s;
+        will-change: transform;
+    }
+    
+    .term:hover {
+        transform: scale(1.35); /* Aumentei de 1.2 para 1.35 */
+        opacity: 1;
+        z-index: 100;
+    }
+    
+    /* EFEITO DE REPULSA - palavras ao redor ficam menores e desfocadas */
+    .container:has(.term:hover) .term:not(:hover) {
+        transform: scale(0.85); /* Encolhe levemente */
+        filter: blur(0.5px); /* Desfoque sutil */
+        opacity: 0.6; /* Diminui opacidade */
+    }
+    
+    /* Cores */
+    .brand-gradient {
+        background: linear-gradient(135deg, #CC092F 0%, #F53468 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 800;
+    }
+    .brand-solid { color: #CC092F; font-weight: 700; }
+    .neutral { color: #555555; font-weight: 500; }
+</style>
+"
+
+-- 4. Construção dos Spans com Delay Aleatório
+VAR _HTML_Content = 
+    CONCATENATEX(
+        _TabelaAlvo,
+        VAR _ValorAtual = [Total Gastos] 
+        VAR _Score = IF(_Diff = 0, 1, DIVIDE(_ValorAtual - _MinVal, _Diff, 0))
+        VAR _FontSize = INT(_MinFont + (_Score * (_MaxFont - _MinFont)))
+        VAR _Class = SWITCH(TRUE(), _Score >= 0.8, "brand-gradient", _Score >= 0.4, "brand-solid", "neutral")
+        
+        VAR _TooltipTexto = Gastos[Descrição] & UNICHAR(10) & "Valor: R$ " & FORMAT(_ValorAtual, "#,##0.00")
+        VAR _Delay = FORMAT(RAND() * 0.8, "0.00") & "s"
+            
+        RETURN
+            "<span class='term " & _Class & "' " & 
+            "title='" & _TooltipTexto & "' " & 
+            "style='font-size:" & _FontSize & "px; animation-delay:" & _Delay & ";'>" & 
+            Gastos[Descrição] & 
+            "</span>",
+        " " 
+    )
+
+RETURN
+    _CSS & "<div class='container'>" & _HTML_Content & "</div>"
