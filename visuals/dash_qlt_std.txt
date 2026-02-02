@@ -1,0 +1,307 @@
+Dashboard_UX_Quality_Final_V2 = 
+/* -----------------------------------------------------------------------
+   DASHBOARD DE QUALIDADE DE DADOS - CORREÇÃO DE DECIMAIS
+   -----------------------------------------------------------------------
+   1. Correção Crítica: A função JS agora aceita tanto '94.5' quanto '94,5'
+      sem transformar em '945'.
+   2. Limpeza Visual: Arredonda decimais longos para 1 casa (ex: 99.9%).
+*/
+
+// ==========================================================
+// 1. INPUTS (Conectados às suas Medidas)
+// ==========================================================
+VAR _Escala_Input       = 2.0 
+
+// Stats
+VAR _Val_Catalogos      = [Total Catalogos]
+VAR _Val_Schemas        = [Total Schemas]
+VAR _Val_Tabelas        = [Total Tabelas]
+VAR _Val_Campos         = [Total Campos]
+
+// Métricas (%)
+VAR _Pct_Disponibilidade = [% Disponibilidade]
+VAR _Pct_Completude      = [% Completude]
+VAR _Pct_Consistencia    = [% Consistencia]
+VAR _Pct_Integridade     = [% Integridade]
+VAR _Pct_Unicidade       = [% Unicidade]
+VAR _Pct_Variacao        = [% Variacao]
+VAR _Pct_Validade        = [% Validade]
+
+// Execuções
+VAR _Exec_Consistencia   = [Exec Consistencia]
+VAR _Max_Consistencia    = [Max Consistencia]
+VAR _Exec_Completude     = [Exec Completude]
+VAR _Max_Completude      = [Max Completude]
+VAR _Exec_Disponibilidade= [Exec Disponibilidade]
+VAR _Max_Disponibilidade = [Max Disponibilidade]
+VAR _Exec_Integridade    = [Exec Integridade]
+VAR _Max_Integridade     = [Max Integridade]
+VAR _Exec_Variacao       = [Exec Variacao]
+VAR _Max_Variacao        = [Max Variacao]
+VAR _Exec_Unicidade      = [Exec Unicidade]
+VAR _Max_Unicidade       = [Max Unicidade]
+
+// ==========================================================
+// 2. CSS
+// ==========================================================
+VAR _Escala_CSS = SUBSTITUTE(CONVERT(_Escala_Input, STRING), ",", ".")
+VAR _CSS = "
+<style>
+    :root {
+        --scale: " & _Escala_CSS & ";
+        --base-size: calc(14px * var(--scale)); 
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: 'Bradesco Sans', 'Inter', sans-serif;
+        background: transparent; color: #1F2937;
+        font-size: var(--base-size); overflow-y: auto;
+    }
+    .main-content { display: flex; flex-direction: column; gap: 1.5em; padding: 0.5em; width: 100%; }
+    
+    /* Stats */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(11em, 1fr)); gap: 1em; }
+    .stat-card {
+        background: rgba(255, 255, 255, 0.95); padding: 1em; border-radius: 0.8em;
+        display: flex; align-items: center; gap: 0.8em;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid rgba(229, 231, 235, 0.5);
+        transition: all 0.3s; cursor: default;
+    }
+    .stat-card:hover { transform: translateY(-0.3em); box-shadow: 0 0.8em 1.5em rgba(0,0,0,0.1); border-color: rgba(220, 38, 38, 0.1); }
+    .stat-icon {
+        width: 3em; height: 3em; background: #FEF2F2; border-radius: 0.6em;
+        display: flex; align-items: center; justify-content: center; color: #DC2626; transition: all 0.3s;
+    }
+    .stat-card:hover .stat-icon { background: #DC2626; color: white; }
+    .stat-icon svg { width: 1.8em; height: 1.8em; }
+    .stat-value { font-size: 1.8em; font-weight: 700; color: #111827; line-height: 1; }
+    .stat-label { font-size: 0.75em; color: #6B7280; text-transform: uppercase; font-weight: 600; margin-top: 0.3em; }
+
+    /* Metrics & Sidebar */
+    .content-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5em; }
+    .metrics-section { display: flex; flex-direction: column; gap: 1em; }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5em; }
+    .section-header h3 { font-size: 1.2em; font-weight: 600; color: #374151; display: flex; align-items: center; gap: 0.5em; }
+    .section-header svg { width: 1.3em; height: 1.3em; color: #DC2626; }
+
+    .view-toggle { background: #F3F4F6; padding: 0.3em; border-radius: 0.5em; display: flex; }
+    .toggle-btn {
+        display: flex; align-items: center; gap: 0.4em; padding: 0.4em 0.8em;
+        border-radius: 0.4em; font-size: 0.85em; font-weight: 600;
+        background: transparent; border: none; color: #6B7280; cursor: pointer; transition: all 0.2s;
+    }
+    .toggle-btn.active { background: white; color: #111827; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .toggle-btn svg { width: 1em; height: 1em; }
+
+    .metrics-grid { display: grid; gap: 1em; grid-template-columns: repeat(4, 1fr); }
+    .metric-card {
+        background: white; border-radius: 0.8em; padding: 1.2em;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        min-height: 11em; transition: all 0.3s;
+    }
+    .metric-card:hover { transform: translateY(-0.3em); box-shadow: 0 0.8em 1.5em rgba(0,0,0,0.1); }
+
+    .ring-chart { position: relative; width: 7em; height: 7em; transition: transform 0.4s; cursor: pointer; }
+    .ring-chart:hover { transform: scale(1.15); }
+    .ring-chart svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .ring-track { fill: none; stroke: #F3F4F6; stroke-width: 8; }
+    .ring-progress { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1s; }
+    .ring-value { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+    .ring-value-text { font-size: 1.3em; font-weight: 700; color: #1F2937; }
+    .ring-label { margin-top: 0.8em; font-size: 0.9em; font-weight: 500; color: #6B7280; text-align: center; }
+
+    .sidebar-card { background: white; border-radius: 0.8em; padding: 1.2em; box-shadow: 0 1px 3px rgba(0,0,0,0.05); height: 100%; }
+    .sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2em; }
+    .sidebar-header h3 { font-size: 1.1em; font-weight: 600; color: #374151; display: flex; gap: 0.5em; }
+    .badge { font-size: 0.75em; font-weight: 600; background: #F3F4F6; padding: 0.3em 0.6em; border-radius: 0.3em; color: #6B7280; }
+
+    .progress-list { display: flex; flex-direction: column; gap: 1em; }
+    .progress-item { display: flex; flex-direction: column; gap: 0.4em; }
+    .progress-header { display: flex; justify-content: space-between; font-size: 0.9em; }
+    .progress-label { font-weight: 500; color: #6B7280; }
+    .progress-value { font-weight: 600; color: #374151; }
+    .progress-bar { width: 100%; height: 0.5em; background: #F3F4F6; border-radius: 0.25em; overflow: hidden; }
+    .progress-fill { height: 100%; background: #9CA3AF; border-radius: 0.25em; width: 0; transition: width 1s ease-out; }
+    
+    @media (max-width: 800px) { .content-grid { grid-template-columns: 1fr; } }
+</style>
+"
+
+VAR _JS_Data = "
+<script>
+    // Usar um bloco IIFE (() => { ... })(); impede conflito de variáveis
+    (function() {
+        var dashboardData = {
+            stats: [
+                { icon: 'database', value: '" & COALESCE(_Val_Catalogos, 0) & "', label: 'Catálogos' },
+                { icon: 'layout',   value: '" & COALESCE(_Val_Schemas, 0) & "',   label: 'Schemas' },
+                { icon: 'table',    value: '" & COALESCE(_Val_Tabelas, 0) & "',   label: 'Tabelas' },
+                { icon: 'list',     value: '" & COALESCE(_Val_Campos, 0) & "',    label: 'Campos' }
+            ],
+            metrics: [
+                { label: 'Disponibilidade', value: " & COALESCE(_Pct_Disponibilidade, "null") & " },
+                { label: 'Completude',      value: " & COALESCE(_Pct_Completude, "null") & " },
+                { label: 'Consistência',    value: " & COALESCE(_Pct_Consistencia, "null") & " },
+                { label: 'Integridade',     value: " & COALESCE(_Pct_Integridade, "null") & " },
+                { label: 'Unicidade',       value: " & COALESCE(_Pct_Unicidade, "null") & " },
+                { label: 'Variação',        value: " & COALESCE(_Pct_Variacao, "null") & " },
+                { label: 'Validade',        value: " & COALESCE(_Pct_Validade, "null") & " }
+            ],
+            executions: [
+                { label: 'Consistência',    value: '" & COALESCE(_Exec_Consistencia,0) & "', max: '" & COALESCE(_Max_Consistencia,1) & "' },
+                { label: 'Completude',      value: '" & COALESCE(_Exec_Completude,0) & "',   max: '" & COALESCE(_Max_Completude,1) & "' },
+                { label: 'Disponibilidade', value: '" & COALESCE(_Exec_Disponibilidade,0) & "', max: '" & COALESCE(_Max_Disponibilidade,1) & "' },
+                { label: 'Integridade',     value: '" & COALESCE(_Exec_Integridade,0) & "',    max: '" & COALESCE(_Max_Integridade,1) & "' },
+                { label: 'Variação',        value: '" & COALESCE(_Exec_Variacao,0) & "',       max: '" & COALESCE(_Max_Variacao,1) & "' },
+                { label: 'Unicidade',       value: '" & COALESCE(_Exec_Unicidade,0) & "',      max: '" & COALESCE(_Max_Unicidade,1) & "' }
+            ]
+        };
+
+        var icons = {
+            database: '<ellipse cx=\'12\' cy=\'5\' rx=\'9\' ry=\'3\'/><path d=\'M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5\'/><path d=\'M3 12c0 1.66 4 3 9 3s9-1.34 9-3\'/>',
+            layout: '<rect width=\'7\' height=\'7\' x=\'3\' y=\'3\' rx=\'1\'/><rect width=\'7\' height=\'7\' x=\'14\' y=\'3\' rx=\'1\'/><rect width=\'7\' height=\'7\' x=\'14\' y=\'14\' rx=\'1\'/><rect width=\'7\' height=\'7\' x=\'3\' y=\'14\' rx=\'1\'/>',
+            table: '<path d=\'M12 3v18\'/><rect width=\'18\' height=\'18\' x=\'3\' y=\'3\' rx=\'2\'/><path d=\'M3 9h18\'/><path d=\'M3 15h18\'/>',
+            list: '<line x1=\'8\' x2=\'21\' y1=\'6\' y2=\'6\'/><line x1=\'8\' x2=\'21\' y1=\'12\' y2=\'12\'/><line x1=\'8\' x2=\'21\' y1=\'18\' y2=\'18\'/><line x1=\'3\' x2=\'3.01\' y1=\'6\' y2=\'6\'/><line x1=\'3\' x2=\'3.01\' y1=\'12\' y2=\'12\'/><line x1=\'3\' x2=\'3.01\' y1=\'18\' y2=\'18\'/>'
+        };
+"
+// Note que eu removi o fechar </script> aqui para concatenar com a lógica abaixo
+
+VAR _JS_Logic = "
+        // Funções internas
+        var parseNumber = function(val) {
+            if (val === undefined || val === null || val === '') return null;
+            // ... (sua lógica original de parseNumber) ...
+            let str = String(val);
+            if (str.indexOf(',') > -1) {
+                 str = str.replace(/\./g, '').replace(',', '.');
+            } 
+            const num = parseFloat(str);
+            return isNaN(num) ? null : num;
+        };
+
+        var formatNumber = function(val, isPercent) {
+             if (val === null) return 'N/A';
+             return val.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 1 }) + (isPercent ? '%' : '');
+        };
+
+        var getRingGradient = function(value) {
+            // ... (sua lógica original de gradiente) ...
+            if (value === null) return { start: '#D1D5DB', end: '#D1D5DB' };
+            const colors = {
+                critical:  { start: '#CC092F', end: '#E63946' },
+                attention: { start: '#F77F00', end: '#FCD34D' },
+                moderate:  { start: '#FCD34D', end: '#67E8F9' },
+                good:      { start: '#22D3EE', end: '#3B82F6' },
+                excellent: { start: '#3B82F6', end: '#1E40AF' }
+            };
+            if (value < 75) return colors.critical;
+            if (value < 88) return colors.attention;
+            if (value < 94) return colors.moderate;
+            if (value < 98) return colors.good;
+            return colors.excellent;
+        };
+
+        // Renderização
+        var statsGrid = document.getElementById('stats-grid');
+        if(statsGrid) { // Verificação de segurança
+            statsGrid.innerHTML = '';
+            dashboardData.stats.forEach(stat => {
+                // ... (seu código de renderStats) ...
+                var num = parseNumber(stat.value);
+                var display = num !== null ? num.toLocaleString('pt-BR', {maximumFractionDigits:0}) : '-';
+                statsGrid.innerHTML += `<div class='stat-card'><div class='stat-icon'><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>${icons[stat.icon]}</svg></div><div><div class='stat-value'>${display}</div><div class='stat-label'>${stat.label}</div></div></div>`;
+            });
+        }
+
+        var metricsGrid = document.getElementById('metrics-grid');
+        if(metricsGrid) {
+            metricsGrid.innerHTML = '';
+            dashboardData.metrics.forEach(metric => {
+                // ... (seu código de renderMetrics adaptado) ...
+                var val = parseNumber(metric.value);
+                var radius = 40;
+                var circumference = 2 * Math.PI * radius;
+                var percentage = val !== null ? val : 0;
+                var offset = circumference - (circumference * percentage / 100);
+                var grad = getRingGradient(val);
+                var id = 'grad-' + Math.random().toString(36).substr(2, 9);
+                var display = formatNumber(val, true);
+                var valueColor = val !== null ? '#1F2937' : '#9CA3AF';
+                var strokeColor = val !== null ? `url(#${id})` : '#D1D5DB'; 
+
+                metricsGrid.innerHTML += `<div class='metric-card'><div class='ring-chart'><svg viewBox='0 0 100 100'><defs><linearGradient id='${id}' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='${grad.end}'/><stop offset='100%' stop-color='${grad.start}'/></linearGradient></defs><circle class='ring-track' cx='50' cy='50' r='${radius}'/><circle class='ring-progress' cx='50' cy='50' r='${radius}' stroke='${strokeColor}' stroke-dasharray='${circumference}' stroke-dashoffset='${circumference}' data-target='${val !== null ? offset : circumference}'/></svg><div class='ring-value' style='color: ${valueColor}'><div class='ring-value-text'>${display}</div></div></div><div class='ring-label'>${metric.label}</div></div>`;
+            });
+        }
+
+        var progList = document.getElementById('progress-list');
+        if(progList) {
+            progList.innerHTML = '';
+            dashboardData.executions.forEach(item => {
+                 // ... (seu código de progress) ...
+                 var val = parseNumber(item.value);
+                 var max = parseNumber(item.max);
+                 var pct = (val !== null && max !== null && max > 0) ? Math.min((val / max) * 100, 100) : 0;
+                 var display = val !== null ? val.toLocaleString('pt-BR') : '0';
+                 progList.innerHTML += `<div class='progress-item'><div class='progress-header'><span class='progress-label'>${item.label}</span><span class='progress-value'>${display}</span></div><div class='progress-bar'><div class='progress-fill' style='width: 0%' data-width='${pct}%'></div></div></div>`;
+            });
+        }
+
+        setTimeout(() => {
+            document.querySelectorAll('.ring-progress').forEach(el => { el.style.strokeDashoffset = el.dataset.target; });
+            document.querySelectorAll('.progress-fill').forEach(el => { el.style.width = el.dataset.width; });
+        }, 100);
+
+    })(); // FIM DA IIFE
+</script>
+"
+// ==========================================================
+// 2.5 HTML BODY (ESTRUTURA) - Adicione isso à sua medida
+// ==========================================================
+VAR _HTML_Body = "
+<div class='main-content'>
+    <div class='stats-grid' id='stats-grid'></div>
+
+    <div class='content-grid'>
+        <div class='metrics-section'>
+            <div class='section-header'>
+                <h3>
+                    <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>
+                        <path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10'/><path d='m9 12 2 2 4-4'/>
+                    </svg>
+                    Qualidade dos Dados
+                </h3>
+            </div>
+            <div class='metrics-grid' id='metrics-grid'></div>
+        </div>
+
+        <div class='sidebar'>
+            <div class='sidebar-card'>
+                <div class='sidebar-header'>
+                    <h3>
+                        <svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>
+                            <line x1='3' x2='3' y1='3' y2='21'/><line x1='3' x2='21' y1='21' y2='21'/><line x1='18' x2='18' y1='17' y2='9'/><line x1='13' x2='13' y1='17' y2='5'/><line x1='8' x2='8' y1='17' y2='13'/>
+                        </svg>
+                        Execuções
+                    </h3>
+                    <span class='badge'>Total</span>
+                </div>
+                <div class='progress-list' id='progress-list'></div>
+            </div>
+        </div>
+    </div>
+</div>
+"
+
+// ==========================================================
+// 4. OUTPUT COM TRIGGER DE ATUALIZAÇÃO
+// ==========================================================
+// Cria um valor que muda sempre que os dados mudam (ex: soma de execuções ou um hash)
+VAR _DataTrigger = COALESCE(_Val_Catalogos, 0) + COALESCE(_Val_Tabelas, 0) + COALESCE(_Pct_Disponibilidade, 0)
+
+RETURN 
+    _CSS & 
+    _HTML_Body & 
+    _JS_Data & 
+    _JS_Logic & 
+    ""

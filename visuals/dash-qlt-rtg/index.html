@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Governance Dashboard</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="navbar">
+    <div class="nav-content">
+        <div class="nav-left">
+            <div class="logo-icon">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="white">
+                    <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
+                </svg>
+            </div>
+            <div class="logo-text">
+                <h1>Data<span>Governance</span></h1>
+                <span class="logo-sub">Bradesco Next</span>
+            </div>
+        </div>
+        
+        <div class="nav-right">
+            <div class="nav-icon">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="m21 21-4.35-4.35"/>
+                </svg>
+            </div>
+            <div class="nav-icon notification">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+                    <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+                </svg>
+                <span class="notification-dot"></span>
+            </div>
+            <div class="user-avatar">UX</div>
+        </div>
+    </div>
+</nav>
+
+<main class="main-content">
+    
+    <!-- Header -->
+    <div class="page-header">
+        <div>
+            <h2>Dashboard de Qualidade</h2>
+            <p>Monitoramento em tempo real dos ativos de dados.</p>
+        </div>
+        <div class="period-selector">
+            <span>Período:</span>
+            <select id="period-select">
+                <option>Últimos 30 dias</option>
+                <option>Hoje</option>
+                <option>Este Ano</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid" id="stats-grid"></div>
+
+    <!-- Main Content Grid -->
+    <div class="content-grid">
+        
+        <!-- Quality Metrics Section -->
+        <div class="metrics-section">
+            <div class="section-header">
+                <h3>
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+                        <path d="m9 12 2 2 4-4"/>
+                    </svg>
+                    Qualidade dos Dados
+                </h3>
+                
+                <!-- View Toggle -->
+                <div class="view-toggle">
+                    <button class="toggle-btn active" data-view="ring">
+                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>
+                            <path d="M22 12A10 10 0 0 0 12 2v10z"/>
+                        </svg>
+                        Anéis
+                    </button>
+                    <button class="toggle-btn" data-view="bar">
+                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" x2="3" y1="3" y2="21"/>
+                            <line x1="3" x2="21" y1="21" y2="21"/>
+                            <line x1="18" x2="18" y1="17" y2="9"/>
+                            <line x1="13" x2="13" y1="17" y2="5"/>
+                            <line x1="8" x2="8" y1="17" y2="13"/>
+                        </svg>
+                        Barras
+                    </button>
+                </div>
+            </div>
+
+            <div class="metrics-grid" id="metrics-grid"></div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-card">
+                <div class="sidebar-header">
+                    <h3>
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" x2="3" y1="3" y2="21"/>
+                            <line x1="3" x2="21" y1="21" y2="21"/>
+                            <line x1="18" x2="18" y1="17" y2="9"/>
+                            <line x1="13" x2="13" y1="17" y2="5"/>
+                            <line x1="8" x2="8" y1="17" y2="13"/>
+                        </svg>
+                        Execuções
+                    </h3>
+                    <span class="badge">Total</span>
+                </div>
+                
+                <div class="progress-list" id="progress-list"></div>
+
+                <div class="ai-insights">
+                    <h4>AI Insights</h4>
+                    <div class="insight-box">
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" x2="12" y1="8" y2="12"/>
+                            <line x1="12" x2="12.01" y1="16" y2="16"/>
+                        </svg>
+                        <p id="ai-insight-text">
+                            A <strong>Disponibilidade</strong> caiu 2% em relação à semana passada. 
+                            Verifique os jobs noturnos no Schema 95.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<script src="js/data.js"></script>
+<script src="js/render.js"></script>
+
+</body>
+</html>
