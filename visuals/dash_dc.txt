@@ -1,0 +1,658 @@
+Dashboard_UX_Bradesco_Final = 
+/* =========================================================================
+   DASHBOARD UX BRADESCO - VERSÃO FINAL (HTML/CSS)
+   =========================================================================
+   INSTRUÇÕES:
+   1. Substitua os valores fixos nas variáveis abaixo pelas suas Medidas [].
+   2. Certifique-se de que suas medidas retornem TEXTO ou NÚMERO conforme indicado.
+   3. Para formatação (ex: "1.250"), use a função FORMAT() nas suas medidas.
+   ========================================================================= */
+
+/* -------------------------------------------------------------------------
+   1. INPUTS DE DADOS (ÁREA DE EDIÇÃO)
+   ------------------------------------------------------------------------- */
+
+   /* --- KPIS DO TOPO (BARRA SUPERIOR) --- */
+   
+   -- KPI 1: PUE
+   VAR _kpi1_val       = FORMAT(1.61, "0.00")      -- Substituir por: [Medida PUE Valor]
+   VAR _kpi1_target    = "Target < 1.50"           -- Texto fixo ou dinâmico
+   VAR _kpi1_status    = "ATENÇÃO"                 -- Texto: "IDEAL", "ATENÇÃO", "CRÍTICO"
+   VAR _kpi1_type      = "warning"                 -- Opções: "success", "warning", "danger", "neutral"
+   VAR _kpi1_trend_dir = "up"                      -- Opções: "up", "down", "flat"
+   VAR _kpi1_trend_val = "+3.2%"                   -- Texto da variação
+   VAR _kpi1_is_good   = FALSE()                   -- Lógica: TRUE() se a tendência for boa, FALSE() se ruim
+
+   -- KPI 2: WUE
+   VAR _kpi2_val       = FORMAT(0.52, "0.00")      -- Substituir por: [Medida WUE Valor]
+   VAR _kpi2_target    = "L/kWh"
+   VAR _kpi2_status    = "IDEAL"
+   VAR _kpi2_type      = "success"
+   VAR _kpi2_trend_dir = "down"
+   VAR _kpi2_trend_val = "-1.5%"
+   VAR _kpi2_is_good   = TRUE()
+
+   -- KPI 3: CUE
+   VAR _kpi3_val       = FORMAT(0.45, "0.00")
+   VAR _kpi3_target    = "kg/kWh"
+   VAR _kpi3_status    = "NOMINAL"
+   VAR _kpi3_type      = "neutral"
+   VAR _kpi3_trend_dir = "flat"
+   VAR _kpi3_trend_val = "0%"
+   VAR _kpi3_is_good   = TRUE()
+
+   -- KPI 4: Carga Total
+   VAR _kpi4_val       = "862"
+   VAR _kpi4_target    = "kW Avg"
+   VAR _kpi4_status    = "ALTA DEMANDA"
+   VAR _kpi4_type      = "danger"
+   VAR _kpi4_trend_dir = "up"
+   VAR _kpi4_trend_val = "+8%"
+   VAR _kpi4_is_good   = FALSE()
+
+   -- KPI 5: Carga Pesada
+   VAR _kpi5_val       = "862"
+   VAR _kpi5_target    = "kW Avg"
+   VAR _kpi5_status    = "ESTÁVEL"
+   VAR _kpi5_type      = "success"
+   VAR _kpi5_trend_dir = "flat"
+   VAR _kpi5_trend_val = "0%"
+   VAR _kpi5_is_good   = TRUE()
+
+   /* --- BARRA DE CONTEXTO --- */
+   VAR _ctx_location   = "CTI Osasco - SP"         -- Substituir por: [Medida Localização]
+   VAR _ctx_status     = "Online"                  -- Substituir por: [Medida Status Geral]
+
+   /* --- PAINEL 1: ESPAÇO FÍSICO (VERMELHO) --- */
+   -- Gráficos Hero
+   VAR _p1_chart1_pct  = 68                        -- % Ocupação Área (0 a 100)
+   VAR _p1_chart2_pct  = 21                        -- % Ocupação Racks (0 a 100)
+   
+   -- Card 1: Área
+   VAR _p1_area_total  = "12.000"                  -- Valor total
+   VAR _p1_area_disp   = "3.840"                   -- Valor disponível
+   VAR _p1_area_usado  = "8.160"                   -- Valor usado (cálculo ou medida)
+   VAR _p1_area_pct    = 68                        -- % para a barra de progresso (mesmo do chart1)
+   
+   -- Card 2: Racks
+   VAR _p1_racks_total = "2.500"
+   VAR _p1_racks_disp  = "1.975"
+   VAR _p1_racks_pct   = 21                        -- % para a barra de progresso
+   
+   -- Card 3 & 4: Equipamentos
+   VAR _p1_equip_inst  = "15.420"
+   VAR _p1_equip_desinst = "230"
+
+   /* --- PAINEL 2: ENERGIA (AZUL) --- */
+   -- Gráfico Hero
+   VAR _p2_gauge_pct   = 85                        -- % Carga Geral (0 a 100)
+   VAR _p2_gauge_lbl   = "85%"                     -- Rótulo central do gauge
+   
+   -- Card 1: Geradores
+   VAR _p2_gen_total   = "5.000"
+   VAR _p2_gen_disp    = "500"
+   VAR _p2_gen_pct     = 90                        -- % de Carga do Gerador
+   
+   -- Card 2: UPS
+   VAR _p2_ups_total   = "4.000"
+   VAR _p2_ups_disp    = "600"
+   VAR _p2_ups_pct     = 85                        -- % de Carga da UPS
+   
+   -- Detalhamento Consumo
+   VAR _p2_cons_total  = "12.500"
+   VAR _p2_cons_ti     = "8.200"
+   VAR _p2_cons_infra  = "4.300"
+   VAR _p2_diesel      = "15.000 L"
+
+   /* --- PAINEL 3: REFRIGERAÇÃO (TEAL/VERDE-ÁGUA) --- */
+   -- Gráfico Hero
+   VAR _p3_donut_pct   = 72                        -- % Uso TR
+   VAR _p3_donut_val   = "3.200"                   -- Valor TR atual
+   
+   -- Card 1: Capacidade AC
+   VAR _p3_ac_total    = "4.500"
+   VAR _p3_ac_disp     = "1.300"
+   VAR _p3_ac_pct      = 71                        -- % Capacidade utilizada
+   
+   -- Cards Consumo
+   VAR _p3_cons_eletr  = "1.250 MWh"
+   VAR _p3_cons_agua   = "450 m³/dia"
+
+/* -------------------------------------------------------------------------
+   2. LÓGICA DE CÁLCULO E ESTILOS (NÃO ALTERAR ABAIXO DAQUI SE NÃO SOUBER)
+   ------------------------------------------------------------------------- */
+   
+   -- Cálculos SVG Stroke-Dashoffset
+   -- (Circunferência padrão dos SVGs usados: Donut=264, Gauge=220)
+   VAR _offset_p1_c1 = 264 - (264 * _p1_chart1_pct / 100)
+   VAR _offset_p1_c2 = 264 - (264 * _p1_chart2_pct / 100)
+   VAR _offset_p3    = 264 - (264 * _p3_donut_pct / 100)
+   VAR _offset_p2    = 220 - (220 * _p2_gauge_pct / 100)
+
+   -- Classes CSS de Tendência
+   VAR _trend_c1 = IF(_kpi1_trend_dir = "flat", "trend-neutral", IF(_kpi1_is_good, "trend-positive", "trend-negative"))
+   VAR _trend_c2 = IF(_kpi2_trend_dir = "flat", "trend-neutral", IF(_kpi2_is_good, "trend-positive", "trend-negative"))
+   VAR _trend_c3 = IF(_kpi3_trend_dir = "flat", "trend-neutral", IF(_kpi3_is_good, "trend-positive", "trend-negative"))
+   VAR _trend_c4 = IF(_kpi4_trend_dir = "flat", "trend-neutral", IF(_kpi4_is_good, "trend-positive", "trend-negative"))
+   VAR _trend_c5 = IF(_kpi5_trend_dir = "flat", "trend-neutral", IF(_kpi5_is_good, "trend-positive", "trend-negative"))
+
+   -- Paths SVG (Ícones)
+   VAR _path_raio   = "M7 2v11h3v9l7-12h-4l4-8z"
+   VAR _path_gota   = "M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"
+   VAR _path_nuvem  = "M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"
+   VAR _path_server = "M4 6h16v12H4zM2 4v16h20V4H2zm2 2v2h16V6H4zm0 5v2h16v-2H4zm0 5v2h16v-2H4z"
+   VAR _path_speed  = "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
+   VAR _path_alert  = "M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"
+   VAR _path_check  = "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+
+   -- Seleção Dinâmica de Ícone
+   VAR _icon_kpi1 = IF(_kpi1_type = "danger" || _kpi1_type = "warning", _path_alert, _path_raio)
+   VAR _icon_kpi2 = IF(_kpi2_status = "CRÍTICO", _path_alert, _path_gota)
+   VAR _icon_kpi3 = IF(_kpi3_status = "IDEAL", _path_check, _path_nuvem)
+   VAR _icon_kpi4 = IF(_kpi4_type = "danger", _path_alert, _path_server)
+   VAR _icon_kpi5 = _path_speed
+
+/* -------------------------------------------------------------------------
+   3. BLOCO CSS (STYLES)
+   ------------------------------------------------------------------------- */
+VAR _CSS = "
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    .root {
+        font-family: 'Inter', sans-serif;
+        background: #F0F2F5;
+        width: 100%;
+        height: 100vh;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        overflow: hidden;
+    }
+
+    /* Animações */
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes drawDonut { from { stroke-dashoffset: 264; } }
+    @keyframes drawGauge { from { stroke-dashoffset: 220; } }
+    @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
+    @keyframes loadBar { from { width: 0; } } /* Nova animação para barras */
+    
+    .draw-ring { animation: drawDonut 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+    .draw-gauge { animation: drawGauge 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+    .pulse { animation: pulse 2s infinite; }
+
+    /* KPI Row */
+    .kpi-row { 
+        display: grid; 
+        grid-template-columns: repeat(5, 1fr); 
+        gap: 15px; 
+        animation: fadeInDown 0.6s ease-out forwards; 
+        height: 130px; 
+        flex-shrink: 0; 
+    }
+    
+    .kpi-card { 
+        background: white; 
+        border-radius: 12px; 
+        box-shadow: 0 4px 24px rgba(0,0,0,0.04); 
+        border: 1px solid rgba(0,0,0,0.02); 
+        display: flex; 
+        flex-direction: column; 
+        justify-content: center; 
+        padding: 0 20px; 
+        position: relative; 
+        transition: transform 0.3s; 
+        overflow: hidden; 
+    }
+    .kpi-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.08); }
+    .kpi-card::before { content: ''; position: absolute; left: 0; top: 20px; bottom: 20px; width: 4px; background: linear-gradient(180deg, #CC092F 0%, #FF2F4F 100%); border-radius: 0 4px 4px 0; }
+    
+    .kpi-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .kpi-title-group { display: flex; align-items: center; gap: 8px; }
+    .kpi-icon-svg { fill: #86868B; opacity: 0.8; }
+    .kpi-lbl { font-size: 11px; font-weight: 700; color: #86868B; text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    .kpi-badge { font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 12px; text-transform: uppercase; }
+    .status-danger { background: rgba(204, 9, 47, 0.1); color: #CC092F; }
+    .status-warning { background: rgba(245, 158, 11, 0.15); color: #B45309; }
+    .status-success { background: rgba(16, 185, 129, 0.1); color: #059669; }
+    .status-neutral { background: rgba(107, 114, 128, 0.1); color: #4B5563; }
+    
+    .kpi-val { font-size: 30px; font-weight: 600; color: #1D1D1F; letter-spacing: -0.5px; line-height: 1; }
+    
+    .kpi-footer { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+    .kpi-sub { font-size: 12px; color: #86868B; font-weight: 500; }
+    
+    .trend-indicator { font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 2px; }
+    .trend-positive { color: #10B981; }
+    .trend-negative { color: #CC092F; }
+    .trend-neutral { color: #86868B; }
+
+    /* Context Bar */
+    .context-bar { height: 50px; flex-shrink: 0; background: white; border-radius: 10px; border: 1px solid rgba(0,0,0,0.02); box-shadow: 0 4px 24px rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: space-between; transition: transform 0.3s; padding: 0 20px; }
+    .ctx-content { display: flex; align-items: center; gap: 12px; }
+    .ctx-pill { background: #EBF8FA; color: #008A99; font-size: 13px; font-weight: 700; padding: 6px 16px; border-radius: 20px; }
+    .status-dot { width: 8px; height: 8px; background: #10B981; border-radius: 50%; }
+
+    /* Panels Grid */
+    .panels-row { 
+        flex: 1;
+        display: grid; 
+        grid-template-columns: repeat(3, 1fr); 
+        gap: 15px; 
+        min-height: 0;
+        animation: fadeInUp 0.8s ease-out forwards 0.3s; 
+    }
+    
+    .panel { 
+        background: white; 
+        border-radius: 16px; 
+        box-shadow: 0 4px 24px rgba(0,0,0,0.04); 
+        border: 1px solid rgba(0,0,0,0.02); 
+        display: flex; 
+        flex-direction: column; 
+        overflow: hidden; 
+        height: 100%; 
+        transition: transform 0.3s, box-shadow 0.3s; /* Adicionada transição */
+    }
+    /* Adicionado Hover no Panel */
+    .panel:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.08); }
+    
+    .panel-header { padding: 15px 20px; display: flex; align-items: center; gap: 10px; height: 55px; flex-shrink: 0; }
+    .panel-title { font-size: 16px; font-weight: 500; color: white; letter-spacing: 0.3px; }
+    
+    .panel-body { 
+        padding: 20px; 
+        flex: 1; 
+        display: flex; 
+        flex-direction: column; 
+        gap: 12px;
+        overflow-y: auto;
+    }
+    /* Scrollbar Fina */
+    .panel-body::-webkit-scrollbar { width: 6px; }
+    .panel-body::-webkit-scrollbar-thumb { background: #E0E0E0; border-radius: 3px; }
+
+    .hero-area { 
+        height: 120px; 
+        flex-shrink: 0; 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        border-bottom: 1px solid #F0F0F0;
+        padding-bottom: 10px;
+        margin-bottom: 5px;
+    }
+
+    /* --- CARDS & PROGRESS BARS --- */
+    .cards-container { 
+        flex: 1; 
+        display: flex; 
+        flex-direction: column; 
+        gap: 10px; 
+    }
+
+    .detail-card {
+        flex: 1; 
+        background: #FAFAFA; 
+        border-radius: 8px;
+        padding: 12px 16px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center; 
+        gap: 6px;
+        transition: all 0.2s;
+        position: relative;
+        overflow: hidden;
+        min-height: 60px;
+    }
+    .detail-card:hover { transform: translateX(2px); background: #FFF; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+
+    .dc-header { display: flex; justify-content: space-between; align-items: center; }
+    .dc-title { font-size: 11px; font-weight: 700; color: #86868B; text-transform: uppercase; letter-spacing: 0.5px; }
+    .dc-val-highlight { font-size: 14px; font-weight: 700; }
+    
+    /* Barras de Progresso */
+    .progress-track { width: 100%; height: 6px; background: rgba(0,0,0,0.05); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+    /* Adicionada animation: loadBar */
+    .progress-fill { height: 100%; border-radius: 3px; animation: loadBar 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+
+    .dc-sub-row { display: flex; justify-content: space-between; font-size: 11px; color: #86868B; margin-top: 2px; }
+    
+    /* Stat Cards Simples */
+    .stat-card {
+         flex: 1; 
+         background: #FAFAFA; 
+         border-radius: 8px;
+         padding: 12px 16px;
+         display: flex; 
+         justify-content: space-between; 
+         align-items: center;
+         min-height: 50px;
+         transition: all 0.2s;
+    }
+    .stat-card:hover { transform: translateX(2px); background: #FFF; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .stat-val { font-size: 16px; font-weight: 700; }
+    
+    .grid-stretch {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    /* Utilitários de Cor */
+    .c-red { color: #CC092F; }
+    .bg-red { background-color: #CC092F !important; }
+    
+    .c-blue { color: #0047BB; }
+    .bg-blue { background-color: #0047BB !important; }
+    
+    .c-teal { color: #008A99; }
+    .bg-teal { background-color: #008A99 !important; }
+    
+    .c-dark { color: #1D1D1F; }
+
+    .d-unit { font-size: 10px; color: #86868B; font-weight: 400; }
+    .section-label { font-size: 10px; font-weight: 700; color: #B0B0B5; text-transform: uppercase; margin-top: 5px; flex-shrink: 0; }
+</style>
+"
+
+/* -------------------------------------------------------------------------
+   4. CONSTRUÇÃO DO HTML (MARKUP)
+   ------------------------------------------------------------------------- */
+   
+   /* --- KPI ROW MARKUP --- */
+   -- Função auxiliar não existe em DAX, então repetimos a estrutura.
+   VAR _HTML_KPI1 = 
+    "<div class='kpi-card' style='animation-delay: 0.1s'>
+        <div class='kpi-header'>
+            <div class='kpi-title-group'>
+                <svg class='kpi-icon-svg' viewBox='0 0 24 24' width='16' height='16'><path d='" & _icon_kpi1 & "' /></svg>
+                <span class='kpi-lbl'>PUE (Eficiência)</span>
+            </div>
+            <div class='kpi-badge status-" & _kpi1_type & "'>" & _kpi1_status & "</div>
+        </div>
+        <span class='kpi-val'>" & _kpi1_val & "</span>
+        <div class='kpi-footer'>
+            <span class='kpi-sub'>" & _kpi1_target & "</span>
+            <div class='trend-indicator " & _trend_c1 & "'>
+                " & IF(_kpi1_trend_dir="up", "▲", IF(_kpi1_trend_dir="down", "▼", "")) & " " & _kpi1_trend_val & "
+            </div>
+        </div>
+    </div>"
+
+    VAR _HTML_KPI2 = 
+    "<div class='kpi-card' style='animation-delay: 0.2s'>
+        <div class='kpi-header'>
+            <div class='kpi-title-group'>
+                <svg class='kpi-icon-svg' viewBox='0 0 24 24' width='16' height='16'><path d='" & _icon_kpi2 & "' /></svg>
+                <span class='kpi-lbl'>WUE (Água)</span>
+            </div>
+            <div class='kpi-badge status-" & _kpi2_type & "'>" & _kpi2_status & "</div>
+        </div>
+        <span class='kpi-val'>" & _kpi2_val & "</span>
+        <div class='kpi-footer'>
+            <span class='kpi-sub'>" & _kpi2_target & "</span>
+            <div class='trend-indicator " & _trend_c2 & "'>
+                " & IF(_kpi2_trend_dir="up", "▲", IF(_kpi2_trend_dir="down", "▼", "")) & " " & _kpi2_trend_val & "
+            </div>
+        </div>
+    </div>"
+
+    VAR _HTML_KPI3 = 
+    "<div class='kpi-card' style='animation-delay: 0.3s'>
+        <div class='kpi-header'>
+            <div class='kpi-title-group'>
+                <svg class='kpi-icon-svg' viewBox='0 0 24 24' width='16' height='16'><path d='" & _icon_kpi3 & "' /></svg>
+                <span class='kpi-lbl'>CUE (Carbono)</span>
+            </div>
+            <div class='kpi-badge status-" & _kpi3_type & "'>" & _kpi3_status & "</div>
+        </div>
+        <span class='kpi-val'>" & _kpi3_val & "</span>
+        <div class='kpi-footer'>
+            <span class='kpi-sub'>" & _kpi3_target & "</span>
+            <div class='trend-indicator " & _trend_c3 & "'>
+                " & IF(_kpi3_trend_dir="up", "▲", IF(_kpi3_trend_dir="down", "▼", "")) & " " & _kpi3_trend_val & "
+            </div>
+        </div>
+    </div>"
+
+    VAR _HTML_KPI4 = 
+    "<div class='kpi-card' style='animation-delay: 0.4s'>
+        <div class='kpi-header'>
+            <div class='kpi-title-group'>
+                <svg class='kpi-icon-svg' viewBox='0 0 24 24' width='16' height='16'><path d='" & _icon_kpi4 & "' /></svg>
+                <span class='kpi-lbl'>Carga Total</span>
+            </div>
+            <div class='kpi-badge status-" & _kpi4_type & "'>" & _kpi4_status & "</div>
+        </div>
+        <span class='kpi-val'>" & _kpi4_val & "</span>
+        <div class='kpi-footer'>
+            <span class='kpi-sub'>" & _kpi4_target & "</span>
+            <div class='trend-indicator " & _trend_c4 & "'>
+                " & IF(_kpi4_trend_dir="up", "▲", IF(_kpi4_trend_dir="down", "▼", "")) & " " & _kpi4_trend_val & "
+            </div>
+        </div>
+    </div>"
+
+    VAR _HTML_KPI5 = 
+    "<div class='kpi-card' style='animation-delay: 0.5s'>
+        <div class='kpi-header'>
+            <div class='kpi-title-group'>
+                <svg class='kpi-icon-svg' viewBox='0 0 24 24' width='16' height='16'><path d='" & _icon_kpi5 & "' /></svg>
+                <span class='kpi-lbl'>Carga Pesada</span>
+            </div>
+            <div class='kpi-badge status-" & _kpi5_type & "'>" & _kpi5_status & "</div>
+        </div>
+        <span class='kpi-val'>" & _kpi5_val & "</span>
+        <div class='kpi-footer'>
+            <span class='kpi-sub'>" & _kpi5_target & "</span>
+            <div class='trend-indicator " & _trend_c5 & "'>
+                " & IF(_kpi5_trend_dir="up", "▲", IF(_kpi5_trend_dir="down", "▼", "")) & " " & _kpi5_trend_val & "
+            </div>
+        </div>
+    </div>"
+
+    VAR _HTML_KPI_ROW = "<div class='kpi-row'>" & _HTML_KPI1 & _HTML_KPI2 & _HTML_KPI3 & _HTML_KPI4 & _HTML_KPI5 & "</div>"
+
+   /* --- CONTEXT BAR MARKUP --- */
+   VAR _HTML_CTX = 
+   "<div class='context-bar'>
+        <div class='ctx-content'>
+          <svg viewBox='0 0 24 24' width='18' height='18' fill='#CC092F'><path d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z'/></svg>
+          <span class='kpi-lbl' style='margin:0; color:#1D1D1F'>Localização:</span>
+          <div class='ctx-pill'>" & _ctx_location & "</div>
+        </div>
+        <div class='ctx-content'>
+          <div class='status-dot pulse'></div>
+          <span class='kpi-lbl' style='color:#10B981; margin:0'>" & _ctx_status & "</span>
+        </div>
+   </div>"
+
+   /* --- PAINEL 1 MARKUP (ESPAÇO) --- */
+   VAR _HTML_P1 = 
+   "<div class='panel'>
+      <div class='panel-header' style='background: linear-gradient(135deg, #CC092F, #FF5C75)'>
+        <svg viewBox='0 0 24 24' width='20' height='20' fill='white'><path d='M3 21h18v-2H3v2zM5 3v12h14V3H5zm12 10H7V5h10v8z'/></svg>
+        <span class='panel-title'>Espaço Físico</span>
+      </div>
+      <div class='panel-body'>
+        <div class='hero-area'>
+           <div style='width:90px; height:90px;'>
+                <svg viewBox='0 0 100 100' width='100%' height='100%'>
+                <defs><linearGradient id='gradRed' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='#CC092F'/><stop offset='100%' stop-color='#FF2F4F'/></linearGradient></defs>
+                <circle cx='50' cy='50' r='42' fill='none' stroke='#F0F2F5' stroke-width='10'/>
+                <circle class='draw-ring' cx='50' cy='50' r='42' fill='none' stroke='url(#gradRed)' stroke-width='10' stroke-linecap='round' stroke-dasharray='264' stroke-dashoffset='" & _offset_p1_c1 & "' transform='rotate(-90 50 50)'/>
+                <text x='50' y='55' text-anchor='middle' font-weight='700' font-size='20' fill='#1D1D1F'>" & _p1_chart1_pct & "%</text>
+                <text x='50' y='70' text-anchor='middle' font-size='9' fill='#86868B'>Ocupação</text>
+                </svg>
+           </div>
+        </div>
+        <div class='cards-container'>
+           <div class='detail-card'>
+             <div class='dc-header'>
+                <span class='dc-title'>Área Total (m²)</span>
+                <span class='dc-val-highlight c-red'>" & _p1_area_pct & "%</span>
+             </div>
+             <div class='progress-track'><div class='progress-fill bg-red' style='width: " & _p1_area_pct & "%'></div></div>
+             <div class='dc-sub-row'>
+                <span>Usado: " & _p1_area_usado & "</span>
+                <span>Disp: " & _p1_area_disp & "</span>
+             </div>
+           </div>
+           <div class='detail-card'>
+             <div class='dc-header'>
+                <span class='dc-title'>Racks (Vertical)</span>
+                <span class='dc-val-highlight c-red'>" & _p1_racks_pct & "%</span>
+             </div>
+             <div class='progress-track'><div class='progress-fill bg-red' style='width: " & _p1_racks_pct & "%'></div></div>
+             <div class='dc-sub-row'>
+                <span>Total: " & _p1_racks_total & "</span>
+                <span>Disp: " & _p1_racks_disp & "</span>
+             </div>
+           </div>
+           <div class='stat-card'>
+             <span class='dc-title'>Equip. Instalados</span>
+             <span class='stat-val c-dark'>" & _p1_equip_inst & "</span>
+           </div>
+           <div class='stat-card'>
+             <span class='dc-title'>Desinstalados</span>
+             <span class='stat-val c-dark' style='opacity:0.5'>" & _p1_equip_desinst & "</span>
+           </div>
+        </div>
+      </div>
+   </div>"
+
+   /* --- PAINEL 2 MARKUP (ENERGIA) --- */
+   VAR _HTML_P2 = 
+   "<div class='panel'>
+      <div class='panel-header' style='background: linear-gradient(135deg, #0047BB, #4D8AFF)'>
+        <svg viewBox='0 0 24 24' width='20' height='20' fill='white'><path d='M11 21h-1l1-7H7.5c-.88 0-.33-.75-.31-.78C8.48 10.94 10.42 7.54 13.01 3h1l-1 7h3.51c.4 0 .62.19.4.66C12.97 17.55 11 21 11 21z'/></svg>
+        <span class='panel-title'>Energia</span>
+      </div>
+      <div class='panel-body'>
+        <div class='hero-area'>
+            <div style='width:160px; height:90px;'>
+            <svg viewBox='0 10 200 100' width='100%' height='100%'>
+              <defs><linearGradient id='gradBlue' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='#0047BB'/><stop offset='100%' stop-color='#2E75FF'/></linearGradient></defs>
+              <path d='M 30 100 A 70 70 0 0 1 170 100' fill='none' stroke='#F0F2F5' stroke-width='16' stroke-linecap='round'/>
+              <path class='draw-gauge' d='M 30 100 A 70 70 0 0 1 170 100' fill='none' stroke='url(#gradBlue)' stroke-width='16' stroke-linecap='round' stroke-dasharray='220' stroke-dashoffset='" & _offset_p2 & "'/>
+              <text x='100' y='75' text-anchor='middle' font-weight='800' font-size='22' fill='#1D1D1F'>" & _p2_gauge_lbl & "</text>
+              <text x='100' y='95' text-anchor='middle' font-weight='600' font-size='10' fill='#86868B' letter-spacing='1'>CARGA</text>
+            </svg>
+           </div>
+        </div>
+        <div class='cards-container'>
+           <div class='section-label'>Capacidade & Carga</div>
+           <div class='detail-card'>
+             <div class='dc-header'>
+                <span class='dc-title'>Geradores (kVA)</span>
+                <span class='dc-val-highlight c-blue'>" & _p2_gen_pct & "%</span>
+             </div>
+             <div class='progress-track'><div class='progress-fill bg-blue' style='width: " & _p2_gen_pct & "%'></div></div>
+             <div class='dc-sub-row'>
+                <span>Total: " & _p2_gen_total & "</span>
+                <span>Disp: " & _p2_gen_disp & "</span>
+             </div>
+           </div>
+           <div class='detail-card'>
+             <div class='dc-header'>
+                <span class='dc-title'>UPS (kVA)</span>
+                <span class='dc-val-highlight c-blue'>" & _p2_ups_pct & "%</span>
+             </div>
+             <div class='progress-track'><div class='progress-fill bg-blue' style='width: " & _p2_ups_pct & "%'></div></div>
+             <div class='dc-sub-row'>
+                <span>Total: " & _p2_ups_total & "</span>
+                <span>Disp: " & _p2_ups_disp & "</span>
+             </div>
+           </div>
+           <div class='section-label'>Detalhamento Consumo</div>
+           <div class='grid-stretch'>
+               <div class='stat-card' style='flex-direction:column; align-items:flex-start; gap:5px'>
+                 <span class='dc-title'>Total</span>
+                 <span class='stat-val c-blue'>" & _p2_cons_total & "</span>
+               </div>
+               <div class='stat-card' style='flex-direction:column; align-items:flex-start; gap:5px'>
+                 <span class='dc-title'>TI</span>
+                 <span class='stat-val c-blue'>" & _p2_cons_ti & "</span>
+               </div>
+           </div>
+           <div class='stat-card'>
+             <span class='dc-title'>Diesel (Mês)</span>
+             <span class='stat-val c-blue'>" & _p2_diesel & "</span>
+           </div>
+        </div>
+      </div>
+   </div>"
+
+   /* --- PAINEL 3 MARKUP (REFRIGERAÇÃO) --- */
+   VAR _HTML_P3 = 
+   "<div class='panel'>
+      <div class='panel-header' style='background: linear-gradient(135deg, #008A99, #00C2D6)'>
+        <svg viewBox='0 0 24 24' width='20' height='20' fill='white'><path d='M14.5 17c0 1.65-1.35 3-3 3s-3-1.35-3-3h2c0 .55.45 1 1 1s1-.45 1-1-.45-1-1-1H2v-2h9.5c1.65 0 3 1.35 3 3zM19 6.5C19 4.57 17.43 3 15.5 3S12 4.57 12 6.5h2c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5S16.33 8 15.5 8H2v2h13.5c1.93 0 3.5-1.57 3.5-3.5zm-.5 4.5H2v2h16.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5v2c1.93 0 3.5-1.57 3.5-3.5S20.43 11 18.5 11z'/></svg>
+        <span class='panel-title'>Refrigeração</span>
+      </div>
+      <div class='panel-body'>
+        <div class='hero-area'>
+          <div style='display:flex; gap:20px; align-items:center;'>
+             <div style='width:90px; height:90px;'>
+                <svg viewBox='0 0 100 100' width='100%' height='100%'>
+                <defs><linearGradient id='gradTeal' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='#008A99'/><stop offset='100%' stop-color='#00C2D6'/></linearGradient></defs>
+                <circle cx='50' cy='50' r='42' fill='none' stroke='#F0F2F5' stroke-width='10'/>
+                <circle class='draw-ring' cx='50' cy='50' r='42' fill='none' stroke='url(#gradTeal)' stroke-width='10' stroke-linecap='round' stroke-dasharray='264' stroke-dashoffset='" & _offset_p3 & "' transform='rotate(-90 50 50)'/>
+                <text x='50' y='55' text-anchor='middle' font-weight='700' font-size='20' fill='#1D1D1F'>" & _p3_donut_pct & "%</text>
+                <text x='50' y='70' text-anchor='middle' font-size='9' fill='#86868B'>Uso TR</text>
+                </svg>
+             </div>
+             <div style='display:flex; flex-direction:column'>
+                <span style='font-size:24px; font-weight:700; color:#008A99; line-height:1'>" & _p3_donut_val & "</span>
+                <span class='d-unit' style='margin-top:2px'>Carga (TR)</span>
+             </div>
+          </div>
+        </div>
+        <div class='cards-container'>
+           <div class='detail-card'>
+             <div class='dc-header'>
+                <span class='dc-title'>Capacidade AC (TR)</span>
+                <span class='dc-val-highlight c-teal'>" & _p3_ac_pct & "%</span>
+             </div>
+             <div class='progress-track'><div class='progress-fill bg-teal' style='width: " & _p3_ac_pct & "%'></div></div>
+             <div class='dc-sub-row'>
+                <span>Total: " & _p3_ac_total & "</span>
+                <span>Disp: " & _p3_ac_disp & "</span>
+             </div>
+           </div>
+           <div class='stat-card'>
+             <div style='display:flex; flex-direction:column'>
+                <span class='dc-title'>Consumo Elétrico AC</span>
+                <span class='d-unit'>Eficiência Energética</span>
+             </div>
+             <span class='stat-val c-teal'>" & _p3_cons_eletr & "</span>
+           </div>
+           <div class='stat-card'>
+             <div style='display:flex; flex-direction:column'>
+                <span class='dc-title'>Consumo de Água</span>
+                <span class='d-unit' style='font-size:9px'>Reuso descontado</span>
+             </div>
+             <span class='stat-val c-teal'>" & _p3_cons_agua & "</span>
+           </div>
+        </div>
+      </div>
+   </div>"
+
+RETURN
+    _CSS & 
+    "<div class='root'>" & 
+        _HTML_KPI_ROW & 
+        _HTML_CTX & 
+        "<div class='panels-row'>" & 
+            _HTML_P1 & 
+            _HTML_P2 & 
+            _HTML_P3 & 
+        "</div>" &
+    "</div>"

@@ -1,0 +1,394 @@
+Dashboard_Financeiro_Final = 
+/* ==================================================================================
+   DASHBOARD FINANCEIRO - DESIGN SYSTEM PREMIUM (CORREÇÃO FULL HEIGHT)
+   ==================================================================================
+   AJUSTES REALIZADOS:
+   1. Sintaxe Flexbox aprimorada (flex: X 1 0) para forçar preenchimento vertical total.
+   2. Placeholders de tabela agora têm height: 100% para desenhar a borda até o fim.
+   3. Garantia de que colunas e grids herdam 100% da altura do viewport.
+   ================================================================================== */
+
+-- ==================================================================================
+-- 1. INPUTS DE DADOS & MEDIDAS (ÁREA DE EDIÇÃO)
+-- ==================================================================================
+
+/* --- KPIS DO TOPO --- */
+VAR _kpi1_Val       = "R$ 2.491.772"        -- Substituir por: FORMAT([Vl_Total_Contrato], "R$ #,##0")
+VAR _kpi2_Val       = "R$ 2.491.772"        -- Substituir por: FORMAT([Vl_Total_Pago], "R$ #,##0")
+VAR _kpi3_Val       = "R$ 0"                -- Substituir por: FORMAT([Vl_Saldo], "R$ #,##0")
+VAR _kpi4_Val       = "R$ 921.955"          -- Substituir por: FORMAT([Vl_Saving], "R$ #,##0")
+VAR _kpi4_Badge     = "+37%"                -- Substituir por: FORMAT([Pct_Saving], "+0%")
+VAR _kpi4_IsPos     = TRUE()                -- Define cor verde/vermelha do badge
+
+/* --- GRÁFICO CENTRAL (EVOLUÇÃO) --- */
+VAR _Evo_Pago_Val   = "R$ 16,3M"
+VAR _Evo_Pago_Pct   = 25.25                 -- 0 a 100
+VAR _Evo_Fat_Val    = "R$ 47,7M"
+VAR _Evo_Fat_Pct    = 74.75                 -- 0 a 100
+
+/* --- SIDEBAR: STATUS DEMANDAS --- */
+VAR _Sts_Total      = 26
+VAR _Sts_Pendente   = 5
+VAR _Sts_Andamento  = 12
+VAR _Sts_Concluido  = 9
+
+/* --- CARD INTELIGENTE: LÓGICA DE CONTEXTO --- */
+-- Captura o que está filtrado na página
+VAR _Ctx_ContratoID = SELECTEDVALUE(Tabela_Financeira_Real[Contrato])
+VAR _Ctx_Fornecedor = SELECTEDVALUE(Tabela_Financeira_Real[Fornecedor])
+
+-- Define o "Modo" de exibição do card
+VAR _Modo_Exibicao = 
+    SWITCH(TRUE(),
+        NOT(ISBLANK(_Ctx_ContratoID)), "CONTRATO",   
+        NOT(ISBLANK(_Ctx_Fornecedor)), "FORNECEDOR", 
+        "VAZIO"                                      
+    )
+
+-- Dados para o modo "CONTRATO"
+VAR _Det_Inicio     = COALESCE(SELECTEDVALUE(Tabela_Financeira_Real[Data]), "01/Fev/2026")
+VAR _Det_Fim        = COALESCE(SELECTEDVALUE(Tabela_Financeira_Real[Data]), "03/Fev/2026")
+VAR _Det_SLA        = "Meta de Atendimento"
+
+-- Dados para o modo "FORNECEDOR"
+VAR _Brand_Status   = "Possui Contratos Ativos" 
+
+-- Lógica de Logo
+VAR _Logo_Url       = 
+    SWITCH(TRUE(),
+        _Ctx_Fornecedor = "AWS SERVICES", "https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg",
+        _Ctx_Fornecedor = "MICROSOFT", "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg",
+        _Ctx_Fornecedor = "GOOGLE", "https://upload.wikimedia.org/wikipedia/commons/5/51/Google_Cloud_logo.svg",
+        "https://cdn-icons-png.flaticon.com/512/4300/4300058.png" 
+    )
+
+-- ==================================================================================
+-- 2. DESIGN SYSTEM (CORES)
+-- ==================================================================================
+VAR _CorPrimaria    = "#CC092F"
+VAR _CorGradiente   = "linear-gradient(90deg, #900f15 0%, #E60039 100%)"
+VAR _CorHeaderGrad  = "linear-gradient(90deg, #CC092F 0%, #B00020 100%)"
+VAR _CorHeaderNeutro= "linear-gradient(90deg, #8E8E93 0%, #636366 100%)"
+VAR _CorBgBar       = "#e4e4e5"
+VAR _CorTextoEscuro = "#1D1D1F"
+VAR _CorTextoCinza  = "#86868B"
+VAR _CorBgIcon      = "#FFF0F2"
+VAR _ShadowCard     = "0 2px 8px rgba(0, 0, 0, 0.04)"
+VAR _ShadowHover    = "0 4px 12px rgba(0, 0, 0, 0.08)"
+
+VAR _Path_File      = "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8"
+VAR _Path_Check     = "M22 11.08V12a10 10 0 1 1-5.93-9.14 M22 4L12 14.01l-3-3"
+VAR _Path_Clock     = "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 6v6l4 2"
+VAR _Path_Trend     = "M23 6l-9.5 9.5-5-5L1 18 M17 6h6v6"
+VAR _Path_Wallet    = "M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4 M4 6v12a2 2 0 0 0 2 2h14v-4 M18 12a2 2 0 0 0 0 4h4v-4"
+VAR _Path_List      = "M8 6h13 M8 12h13 M8 18h13 M3 6h.01 M3 12h.01 M3 18h.01"
+VAR _Path_Table     = "M3 3h18v18H3z M21 9H3 M9 21V9"
+VAR _Path_Search    = "M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35"
+
+-- ==================================================================================
+-- 3. ESTILOS CSS (FLEXBOX AGRESSIVO)
+-- ==================================================================================
+VAR _CSS = "
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    
+    /* Reset Global para garantir altura 100% */
+    html, body { height: 100vh; margin: 0; padding: 0; overflow: hidden; background: transparent !important; }
+    * { box-sizing: border-box; }
+    
+    .root {
+        font-family: 'Bradesco Sans', 'Inter', sans-serif;
+        width: 100%; 
+        height: 100vh; /* Força altura total da viewport */
+        padding: 10px;
+        display: flex; flex-direction: column; gap: 15px;
+    }
+
+    /* --- LAYOUT GRID --- */
+    .kpi-deck { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; flex-shrink: 0; animation: fadeIn 0.5s ease-out; }
+    
+    .main-grid { 
+        display: grid; grid-template-columns: 3fr 1fr; gap: 15px; 
+        flex: 1; /* Ocupa todo o espaço restante */
+        min-height: 0; /* Permite que o conteúdo interno defina limites se necessário */
+        animation: fadeIn 0.6s ease-out; 
+    }
+    
+    .col-left { display: flex; flex-direction: column; gap: 15px; height: 100%; }
+    .col-right { display: flex; flex-direction: column; gap: 15px; height: 100%; }
+
+    /* --- CARDS GENÉRICOS --- */
+    .card {
+        background: white; border-radius: 16px; padding: 20px;
+        box-shadow: " & _ShadowCard & "; border: 1px solid rgba(0,0,0,0.02);
+        display: flex; flex-direction: column; justify-content: space-between;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card:hover { transform: translateY(-2px); box-shadow: " & _ShadowHover & "; }
+
+    /* --- KPI STYLES --- */
+    .kpi-card { min-height: 110px; border-left: 4px solid " & _CorPrimaria & "; }
+    .kpi-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    
+    /* --- EVOLUTION CHART (TOP ROW) --- */
+    .evo-card { 
+        flex: 2.5 1 0; /* Cresce com peso 4, encolhe se preciso, base 0 */
+        min-height: 0; /* Evita travar em conteúdo mínimo */
+    }
+    .progress-track { width: 100%; height: 12px; background: " & _CorBgBar & "; border-radius: 99px; overflow: hidden; margin-top: auto; }
+    .progress-fill { height: 100%; background: " & _CorGradiente & "; border-radius: 99px; width: 0%; animation: growBar 1.2s forwards; }
+    .legends { display: flex; justify-content: space-between; margin-top: 10px; }
+    
+    /* --- STATUS SIDEBAR (TOP ROW) --- */
+    .status-card { 
+        flex: 2.5 1 0; 
+        min-height: 0; 
+    }
+    .status-row { display: flex; align-items: center; height: 100%; gap: 10px; }
+    .list-wrap { flex: 1; display: flex; flex-direction: column; gap: 10px; justify-content: center; min-width: 0; }
+    
+    /* --- BOTTOM ROW (TABELAS E CONTRATO) --- */
+    /* AQUI É A CHAVE: flex: 6 1 0 garante que ocupe 60% do espaço restante */
+    
+    .tbl-row { 
+        display: grid; grid-template-columns: 1fr 1fr; gap: 15px; 
+        flex: 6 1 0; 
+        min-height: 0;
+    }
+    
+    .ctr-wrap { 
+        display: flex; flex-direction: column; gap: 12px;
+        flex: 6 1 0;
+        min-height: 0;
+    }
+
+    /* Utilitários */
+    .icon-box { width: 36px; height: 36px; background: " & _CorBgIcon & "; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .icon-svg { stroke: " & _CorPrimaria & "; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; width: 18px; height: 18px; }
+    .lbl-sm { font-size: 11px; font-weight: 700; color: " & _CorTextoCinza & "; text-transform: uppercase; letter-spacing: 0.5px; }
+    .val-lg { font-size: 30px; font-weight: 600; color: " & _CorTextoEscuro & "; letter-spacing: -0.8px; margin-bottom: 4px; }
+    .sub-txt { font-size: 12px; font-weight: 600; color: " & _CorPrimaria & "; }
+    .badge-pos { display: inline-flex; font-size: 12px; font-weight: 700; color: #059669; background: #D1FAE5; padding: 4px 10px; border-radius: 20px; }
+    .big-num { font-size: 42px; font-weight: 800; color: " & _CorTextoEscuro & "; line-height: 1; letter-spacing: -1px; text-align: center; }
+    .v-sep { width: 1px; height: 60%; background: " & _CorBgBar & "; }
+    .li-row { display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 600; color: " & _CorTextoEscuro & "; }
+    .mini-track { width: 40px; height: 6px; background: " & _CorBgBar & "; border-radius: 99px; margin-left: 8px; overflow: hidden; flex-shrink: 0; }
+    .lg-item { display: flex; flex-direction: column; gap: 2px; }
+    .lg-lbl { font-size: 11px; font-weight: 600; color: " & _CorTextoCinza & "; display: flex; align-items: center; gap: 6px; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; }
+
+    /* Estilos do Widget Contrato */
+    .ctr-header { padding: 15px 20px; border-radius: 12px; color: white; box-shadow: 0 4px 10px rgba(204, 9, 47, 0.2); position: relative; overflow: hidden; flex-shrink: 0; background: " & _CorHeaderGrad & "; }
+    .ctr-header.empty { background: " & _CorHeaderNeutro & "; }
+    .ctr-header::after { content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 40%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15)); transform: skewX(-20deg); }
+    .ctr-body { flex: 1; background: white; border-radius: 16px; padding: 20px; box-shadow: " & _ShadowCard & "; border: 1px solid rgba(0,0,0,0.02); display: flex; flex-direction: column; position: relative; transition: transform 0.2s, box-shadow 0.2s; }
+    .ctr-body:hover { transform: translateY(-3px); box-shadow: " & _ShadowHover & "; }
+    .logo-float { position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center; padding: 4px; }
+    .brand-hero { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; text-align: center; }
+    .brand-logo-lg { width: 80px; height: 80px; object-fit: contain; }
+    .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: " & _CorTextoCinza & "; gap: 10px; opacity: 0.7; }
+    .timeline { margin-top: 30px; position: relative; padding-left: 15px; display: flex; flex-direction: column; gap: 20px; }
+    .timeline::before { content: ''; position: absolute; left: 4px; top: 5px; bottom: 5px; width: 1px; background: #E0E0E0; }
+    .tl-node { position: relative; }
+    .tl-node::after { content: ''; position: absolute; left: -15px; top: 4px; width: 9px; height: 9px; border-radius: 50%; background: white; border: 2px solid " & _CorPrimaria & "; }
+    
+    /* Table Placeholders */
+    .tbl-place { 
+        border: 2px dashed #D1D1D6; background: rgba(255,255,255,0.5); border-radius: 16px; 
+        display: flex; flex-direction: column; align-items: center; justify-content: center; 
+        color: " & _CorTextoCinza & "; position: relative;
+        height: 100%; /* Força altura total */
+    }
+    .badge-ntv { position: absolute; top: 15px; right: 15px; background: " & _CorBgIcon & "; color: " & _CorPrimaria & "; font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; }
+
+    @keyframes growBar { from { width: 0%; } }
+    /*@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }*/
+</style>
+"
+
+-- ==================================================================================
+-- 4. CONSTRUÇÃO DO CONTEÚDO
+-- ==================================================================================
+
+-- (O Código HTML abaixo permanece o mesmo, a mágica foi feita no CSS acima)
+
+VAR _HTML_Widget_Contrato = "
+    <div class='ctr-header'>
+        <div class='lbl-sm' style='color:white; opacity:0.9'>Contrato Selecionado</div>
+        <div style='font-size:20px; font-weight:700; letter-spacing:-0.5px'>#" & _Ctx_ContratoID & "</div>
+    </div>
+    <div class='ctr-body'>
+        <div class='logo-float'>
+            <img src='" & _Logo_Url & "' style='max-width:100%; max-height:100%; object-fit:contain;' onerror='this.style.display=""none""'/>
+        </div>
+        <div class='timeline'>
+            <div class='tl-node'>
+                <div class='lbl-sm'>Início</div>
+                <div style='font-size:14px; font-weight:600; color:"&_CorTextoEscuro&"'>" & _Det_Inicio & "</div>
+            </div>
+            <div class='tl-node'>
+                <div class='lbl-sm'>Término</div>
+                <div style='font-size:14px; font-weight:600; color:"&_CorTextoEscuro&"'>" & _Det_Fim & "</div>
+            </div>
+        </div>
+        <div style='margin-top: auto; padding-top: 15px; border-top: 1px solid #F4F4F5; display: flex; justify-content: space-between; align-items: center;'>
+            <div>
+                <div class='lbl-sm'>Status SLA</div>
+                <div style='font-size:12px; color:"&_CorTextoCinza&"; margin-top:2px'>Atendimento</div>
+            </div>
+            <div style='background:"&_CorBgIcon&"; color:"&_CorPrimaria&"; font-weight:700; font-size:12px; padding:4px 10px; border-radius:6px'>" & _Det_SLA & "</div>
+        </div>
+    </div>
+"
+
+VAR _HTML_Widget_Fornecedor = "
+    <div class='ctr-header'>
+        <div class='lbl-sm' style='color:white; opacity:0.9'>Fornecedor</div>
+        <div style='font-size:18px; font-weight:700; letter-spacing:-0.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis'>" & _Ctx_Fornecedor & "</div>
+    </div>
+    <div class='ctr-body'>
+        <div class='brand-hero'>
+            <img src='" & _Logo_Url & "' class='brand-logo-lg' onerror='this.style.display=""none""'/>
+            <div>
+                <div class='lbl-sm' style='margin-bottom:4px'>Situação Cadastral</div>
+                <div style='font-size:14px; font-weight:700; color:"&_CorPrimaria&"'>" & _Brand_Status & "</div>
+            </div>
+        </div>
+        <div style='text-align:center; font-size:10px; color:"&_CorTextoCinza&"; margin-top:10px; border-top:1px solid #f0f0f0; padding-top:10px;'>
+            Selecione um contrato específico na tabela para ver detalhes de vigência.
+        </div>
+    </div>
+"
+
+VAR _HTML_Widget_Vazio = "
+    <div class='ctr-header empty'>
+        <div class='lbl-sm' style='color:white; opacity:0.9'>Detalhes</div>
+        <div style='font-size:20px; font-weight:700; letter-spacing:-0.5px'>---</div>
+    </div>
+    <div class='ctr-body' style='justify-content:center'>
+        <div class='empty-state'>
+            <svg style='width:40px; height:40px; stroke:"&_CorTextoCinza&"; fill:none; stroke-width:1.5' viewBox='0 0 24 24'><path d='"&_Path_Search&"'/></svg>
+            <div style='font-weight:600; font-size:13px'>Nenhuma Seleção</div>
+            <div style='font-size:11px; max-width:150px'>Selecione um Fornecedor ou Contrato para visualizar os detalhes.</div>
+        </div>
+    </div>
+"
+
+VAR _HTML_WIDGET_FINAL = 
+    SWITCH(_Modo_Exibicao,
+        "CONTRATO", _HTML_Widget_Contrato,
+        "FORNECEDOR", _HTML_Widget_Fornecedor,
+        _HTML_Widget_Vazio
+    )
+
+VAR _HTML_KPIS = "
+<div class='kpi-deck'>
+    <div class='card kpi-card'>
+        <div class='kpi-header'>
+            <div class='icon-box'><svg class='icon-svg' viewBox='0 0 24 24'><path d='"&_Path_File&"'/></svg></div>
+            <span class='lbl-sm'>Total Contratado</span>
+        </div>
+        <div><div class='val-lg'>" & _kpi1_Val & "</div><span class='sub-txt'>Contrato Fixo</span></div>
+    </div>
+    <div class='card kpi-card'>
+        <div class='kpi-header'>
+            <div class='icon-box'><svg class='icon-svg' viewBox='0 0 24 24'><path d='"&_Path_Check&"'/></svg></div>
+            <span class='lbl-sm'>Total Pago</span>
+        </div>
+        <div><div class='val-lg'>" & _kpi2_Val & "</div><span class='sub-txt'>Realizado</span></div>
+    </div>
+    <div class='card kpi-card'>
+        <div class='kpi-header'>
+            <div class='icon-box'><svg class='icon-svg' viewBox='0 0 24 24'><path d='"&_Path_Clock&"'/></svg></div>
+            <span class='lbl-sm'>Faturamento Pendente</span>
+        </div>
+        <div><div class='val-lg'>" & _kpi3_Val & "</div><span class='sub-txt'>Pendente</span></div>
+    </div>
+    <div class='card kpi-card'>
+        <div class='kpi-header'>
+            <div class='icon-box'><svg class='icon-svg' viewBox='0 0 24 24'><path d='"&_Path_Trend&"'/></svg></div>
+            <span class='lbl-sm'>Ganho na Contratação</span>
+        </div>
+        <div><div class='val-lg'>" & _kpi4_Val & "</div><span class='badge-pos'>" & _kpi4_Badge & "</span></div>
+    </div>
+</div>"
+
+VAR _HTML_LEFT_COL = "
+<div class='col-left'>
+    <div class='card evo-card'>
+        <div class='kpi-header'>
+            <div class='icon-box'><svg class='icon-svg' viewBox='0 0 24 24'><path d='"&_Path_Wallet&"'/></svg></div>
+            <span class='lbl-sm'>Evolução Financeira</span>
+        </div>
+        <div style='display:flex; flex-direction:column; height:100%; gap:5px;'>
+            <div class='progress-track'><div class='progress-fill' style='width: " & _Evo_Pago_Pct & "%'></div></div>
+            <div class='legends'>
+                <div class='lg-item'>
+                    <div class='lg-lbl'><span class='dot' style='background:"&_CorPrimaria&"'></span> Pago ("&_Evo_Pago_Pct&"%)</div>
+                    <div class='val-lg' style='font-size:16px; color:"&_CorPrimaria&"'>" & _Evo_Pago_Val & "</div>
+                </div>
+                <div class='lg-item' style='align-items:flex-end;'>
+                    <div class='lg-lbl'>A Faturar ("&_Evo_Fat_Pct&"%) <span class='dot' style='background:#D1D1D6'></span></div>
+                    <div class='val-lg' style='font-size:16px; color:"&_CorTextoCinza&"'>" & _Evo_Fat_Val & "</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class='tbl-row'>
+        <div class='tbl-place'>
+            <span class='badge-ntv'>Visual Nativo PBI</span>
+            <svg style='width:24px; height:24px; stroke:"&_CorTextoCinza&"; opacity:0.5' viewBox='0 0 24 24' fill='none' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='"&_Path_Table&"'/></svg>
+            <span style='margin-top:10px; font-size:14px; font-weight:500'>Contratos</span>
+        </div>
+        <div class='tbl-place'>
+            <span class='badge-ntv'>Visual Nativo PBI</span>
+            <svg style='width:24px; height:24px; stroke:"&_CorTextoCinza&"; opacity:0.5' viewBox='0 0 24 24' fill='none' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='"&_Path_Table&"'/></svg>
+            <span style='margin-top:10px; font-size:14px; font-weight:500'>Demandas</span>
+        </div>
+    </div>
+</div>"
+
+VAR _HTML_RIGHT_COL = "
+<div class='col-right'>
+    <div class='card status-card'>
+        <div class='kpi-header'>
+            <div class='icon-box'><svg class='icon-svg' viewBox='0 0 24 24'><path d='"&_Path_List&"'/></svg></div>
+            <span class='lbl-sm'>Status Demandas</span>
+        </div>
+        <div class='status-row'>
+            <div style='display:flex; flex-direction:column; align-items:center; min-width:60px;'>
+                <div class='big-num'>" & _Sts_Total & "</div>
+                <div class='lbl-sm' style='margin-top:5px'>Total</div>
+            </div>
+            <div class='v-sep'></div>
+            <div class='list-wrap'>
+                <div class='li-row'>
+                    <div style='display:flex; align-items:center; gap:6px; color:"&_CorTextoCinza&"'><span class='dot' style='background:"&_CorPrimaria&"'></span> Pendente</div>
+                    <div style='display:flex; align-items:center;'><span>" & _Sts_Pendente & "</span><div class='mini-track'><div style='height:100%; width:" & (_Sts_Pendente/_Sts_Total)*100 & "%; background:"&_CorPrimaria&"'></div></div></div>
+                </div>
+                <div class='li-row'>
+                    <div style='display:flex; align-items:center; gap:6px; color:"&_CorTextoCinza&"'><span class='dot' style='background:#86868B'></span> Em Andamento</div>
+                    <div style='display:flex; align-items:center;'><span>" & _Sts_Andamento & "</span><div class='mini-track'><div style='height:100%; width:" & (_Sts_Andamento/_Sts_Total)*100 & "%; background:#86868B'></div></div></div>
+                </div>
+                <div class='li-row'>
+                    <div style='display:flex; align-items:center; gap:6px; color:"&_CorTextoCinza&"'><span class='dot' style='background:#0047BB'></span> Concluída</div>
+                    <div style='display:flex; align-items:center;'><span>" & _Sts_Concluido & "</span><div class='mini-track'><div style='height:100%; width:" & (_Sts_Concluido/_Sts_Total)*100 & "%; background:#0047BB'></div></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class='ctr-wrap'>
+        " & _HTML_WIDGET_FINAL & "
+    </div>
+</div>"
+
+RETURN
+    _CSS & 
+    "<div class='root'>" & 
+        _HTML_KPIS & 
+        "<div class='main-grid'>" & 
+            _HTML_LEFT_COL & 
+            _HTML_RIGHT_COL & 
+        "</div>" &
+    "</div>"

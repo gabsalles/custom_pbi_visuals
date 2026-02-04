@@ -1,0 +1,627 @@
+Dash_Financeiro_Com_Gauge_Premium =
+
+-- ==================================================================================
+
+-- 1. CÁLCULOS
+
+-- ==================================================================================
+
+VAR _Val_VerbaTotal  = COALESCE(CALCULATE(SUM(Tabela_Financeira_Real[Valor]), Tabela_Financeira_Real[Categoria] IN {"Contrato Fixo", "Extras"}), 0)
+
+VAR _Val_TotalPago   = COALESCE(CALCULATE(SUM(Tabela_Financeira_Real[Valor]), Tabela_Financeira_Real[Status] = "Pago", Tabela_Financeira_Real[Categoria] = "Contrato Fixo"), 0)
+
+VAR _Val_Faturar     = COALESCE(CALCULATE(SUM(Tabela_Financeira_Real[Valor]), Tabela_Financeira_Real[Categoria] = "Extras", Tabela_Financeira_Real[Status] = "Aguardando"), 0)
+
+
+
+-- GAUGE (Lógica Refinada)
+
+VAR _Gauge_Max       = 145000000
+
+VAR _Gauge_Atual     = COALESCE(CALCULATE(SUM(Tabela_Financeira_Real[Valor]), Tabela_Financeira_Real[Status] = "Pago"), 0)
+
+VAR _Gauge_Pct_Real  = DIVIDE(_Gauge_Atual, _Gauge_Max, 0) * 100
+
+VAR _Gauge_Pct_Draw  = MIN(_Gauge_Pct_Real, 100)
+
+-- Variáveis de Texto
+
+VAR _Txt_GaugeAtual  = FORMAT(_Gauge_Atual, "R$ #,##0,,.0M")
+
+VAR _Txt_GaugeMax    = FORMAT(_Gauge_Max, "R$ #,##0,,.0M")
+
+VAR _Txt_GaugePct    = INT(_Gauge_Pct_Real) & "%" -- Porcentagem Inteira para destaque
+
+
+
+-- BANCOS (Horas, Peças, Serviços) - Mantidos iguais
+
+VAR _H_Pago = COALESCE(CALCULATE(SUM(Tabela_Financeira_Real[Valor]), Tabela_Financeira_Real[Categoria] = "Banco de Horas", Tabela_Financeira_Real[Status] = "Pago"), 0)
+
+VAR _H_Disp = COALESCE(CALCULATE(SUM(Tabela_Financeira_Real[Valor]), Tabela_Financeira_Real[Categoria] = "Banco de Horas", Tabela_Financeira_Real[Status] = "Disponível"), 0)
+
+VAR _H_Aguard = COALESCE(CALCULATE(SUM(Tabela_Financeira_Real[Valor]), Tabela_Financeira_Real[Categoria] = "Banco de Horas", Tabela_Financeira_Real[Status] = "Aguardando"), 0)
+
+VAR _H_Total_Barra = _H_Pago + _H_Disp
+
+VAR _H_Pct = IF(_H_Total_Barra = 0, 0, INT(DIVIDE(_H_Pago, _H_Total_Barra, 0) * 100)) & "%"
+
+VAR _H_Pct_Disp = IF(_H_Total_Barra = 0, 0, INT(DIVIDE(_H_Disp, _H_Total_Barra, 0) * 100)) & "%"
+
+
+
+VAR _P_Pago = COALESCE(CALCULATE(SUM(Tabela_Financeira_Real[Valor]), Tabela_Financeira_Real[Categoria] = "Banco de Peças", Tabela_Financeira_Real[Status] = "Pago"), 0)
+
+VAR _P_Disp = COALESCE(CALCULATE(SUM(Tabela_Financeira_Real[Valor]), Tabela_Financeira_Real[Categoria] = "Banco de Peças", Tabela_Financeira_Real[Status] = "Disponível"), 0)
+
+VAR _P_Aguard = COALESCE(CALCULATE(SUM(Tabela_Financeira_Real[Valor]), Tabela_Financeira_Real[Categoria] = "Banco de Peças", Tabela_Financeira_Real[Status] = "Aguardando"), 0)
+
+VAR _P_Total_Barra = _P_Pago + _P_Disp
+
+VAR _P_Pct = IF(_P_Total_Barra = 0, 0, INT(DIVIDE(_P_Pago, _P_Total_Barra, 0) * 100)) & "%"
+
+VAR _P_Pct_Disp = IF(_P_Total_Barra = 0, 0, INT(DIVIDE(_P_Disp, _P_Total_Barra, 0) * 100)) & "%"
+
+
+
+VAR _S_Pago = COALESCE(CALCULATE(SUM(Tabela_Financeira_Real[Valor]), Tabela_Financeira_Real[Categoria] = "Banco de Serviços", Tabela_Financeira_Real[Status] = "Pago"), 0)
+
+VAR _S_Disp = COALESCE(CALCULATE(SUM(Tabela_Financeira_Real[Valor]), Tabela_Financeira_Real[Categoria] = "Banco de Serviços", Tabela_Financeira_Real[Status] = "Disponível"), 0)
+
+VAR _S_Aguard = COALESCE(CALCULATE(SUM(Tabela_Financeira_Real[Valor]), Tabela_Financeira_Real[Categoria] = "Banco de Serviços", Tabela_Financeira_Real[Status] = "Aguardando"), 0)
+
+VAR _S_Total_Barra = _S_Pago + _S_Disp
+
+VAR _S_Pct = IF(_S_Total_Barra = 0, 0, INT(DIVIDE(_S_Pago, _S_Total_Barra, 0) * 100)) & "%"
+
+VAR _S_Pct_Disp = IF(_S_Total_Barra = 0, 0, INT(DIVIDE(_S_Disp, _S_Total_Barra, 0) * 100)) & "%"
+
+
+
+-- ==================================================================================
+
+-- 2. DESIGN SYSTEM & CORES
+
+-- ==================================================================================
+
+VAR _Fonte           = "-apple-system, BlinkMacSystemFont, 'Bradesco Sans', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+
+VAR _CorPrimaria     = "#CC092F"
+
+VAR _CorGradiente    = "linear-gradient(90deg, #900f15 0%, #E60039 100%)"
+
+VAR _CorFundoBarra   = "#e4e4e5"
+
+VAR _CorCinzaTexto   = "#86868B"
+
+VAR _CorPretaTexto   = "#1D1D1F"
+
+VAR _CorIconeBg      = "#FFF0F2"
+
+VAR _SombraSuave     = "0 4px 12px rgba(0, 0, 0, 0.05)"
+
+VAR _SombraCard      = "0 2px 8px rgba(0, 0, 0, 0.04)"
+
+
+
+-- ==================================================================================
+
+-- 3. ICONOGRAFIA (Novo Ícone TARGET para o Gauge)
+
+-- ==================================================================================
+
+VAR _Icon_Clock = "<svg viewBox='0 0 24 24' width='18' height='18' fill='none' stroke='" & _CorPrimaria & "' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'></circle><polyline points='12 6 12 12 16 14'></polyline></svg>"
+
+VAR _Icon_Box   = "<svg viewBox='0 0 24 24' width='18' height='18' fill='none' stroke='" & _CorPrimaria & "' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z'></path><polyline points='3.27 6.96 12 12.01 20.73 6.96'></polyline><line x1='12' y1='22.08' x2='12' y2='12'></line></svg>"
+
+VAR _Icon_Tool  = "<svg viewBox='0 0 24 24' width='18' height='18' fill='none' stroke='" & _CorPrimaria & "' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z'></path></svg>"
+
+
+
+-- Ícone TARGET (Alvo) para o Gauge
+
+VAR _Icon_Target =
+
+    "<svg viewBox='0 0 24 24' width='18' height='18' fill='none' stroke='" & _CorPrimaria & "' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>
+
+        <circle cx='12' cy='12' r='10'></circle>
+
+        <circle cx='12' cy='12' r='6'></circle>
+
+        <circle cx='12' cy='12' r='2'></circle>
+
+    </svg>"
+
+
+
+-- SVG DO GAUGE (AGORA MAIS ROBUSTO E COM GRADIENTE)
+
+-- Nota: Adicionei um <defs> para o gradiente e aumentei a espessura para 16
+
+VAR _SVG_Gauge_Premium =
+
+    "<svg viewBox='0 0 200 120' width='100%' height='100%'>
+
+        <defs>
+
+            <linearGradient id='gaugeGrad' x1='0%' y1='0%' x2='100%' y2='0%'>
+
+                <stop offset='0%' stop-color='#900f15' />
+
+                <stop offset='100%' stop-color='#E60039' />
+
+            </linearGradient>
+
+        </defs>
+
+        <path d='M 30 110 A 70 70 0 0 1 170 110' fill='none' stroke='" & _CorFundoBarra & "' stroke-width='16' stroke-linecap='round' />
+
+       
+
+        <path class='animate-stroke'
+
+              d='M 30 110 A 70 70 0 0 1 170 110' fill='none' stroke='url(#gaugeGrad)' stroke-width='16' stroke-linecap='round'
+
+              stroke-dasharray='0, 220'
+
+              style='--target-dash: " & (_Gauge_Pct_Draw * 2.2) & ", 220;' />
+
+       
+
+        <text x='100' y='95' text-anchor='middle' font-family='" & _Fonte & "' font-size='28' font-weight='700' fill='" & _CorPretaTexto & "'>" & _Txt_GaugePct & "</text>
+
+        <text x='100' y='110' text-anchor='middle' font-family='" & _Fonte & "' font-size='10' font-weight='600' fill='" & _CorCinzaTexto & "' letter-spacing='1'>REALIZADO</text>
+
+    </svg>"
+
+
+
+-- ==================================================================================
+
+-- 4. CSS
+
+-- ==================================================================================
+
+VAR _CSS = "
+
+<style>
+
+    @keyframes growBar { from { width: 0%; } }
+
+    @keyframes drawStroke { to { stroke-dasharray: var(--target-dash); } }
+
+    .animate-bar { animation: growBar 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+    .animate-stroke { animation: drawStroke 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+
+
+    * { box-sizing: border-box; }
+
+    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background: transparent !important; font-family: " & _Fonte & "; }
+
+
+
+    .dashboard-container {
+
+        display: grid;
+
+        grid-template-columns: repeat(4, 1fr);
+
+        grid-template-rows: auto 1fr;
+
+        gap: 15px;
+
+        width: 100%; height: 100vh; padding: 5px;
+
+    }
+
+
+
+    .card {
+
+        background: white; border-radius: 16px; padding: 20px;
+
+        box-shadow: " & _SombraCard & ";
+
+        display: flex; flex-direction: column; justify-content: space-between;
+
+        transition: transform 0.2s;
+
+    }
+
+    .card:hover { transform: translateY(-2px); box-shadow: " & _SombraSuave & "; }
+
+
+
+    /* KPIS & GAUGE */
+
+    .kpi-card { min-height: 90px; }
+
+    .kpi-label { font-size: 11px; font-weight: 700; color: " & _CorCinzaTexto & "; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 0.5px; }
+
+    .kpi-value { font-size: 22px; font-weight: 700; color: " & _CorPretaTexto & "; letter-spacing: -0.5px; }
+
+    .kpi-sub { font-size: 12px; color: " & _CorPrimaria & "; font-weight: 500; margin-top: auto; }
+
+   
+
+    /* GAUGE ESTENDIDO */
+
+    .gauge-card {
+
+        grid-column: 4; grid-row: 1 / 3;
+
+        padding: 24px; /* Mais padding interno para ficar elegante */
+
+    }
+
+
+
+    /* ESTILOS PADRÃO (BANCO & GAUGE) */
+
+    .title-group { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+
+    .icon-box {
+
+        width: 32px; height: 32px;
+
+        background-color: " & _CorIconeBg & ";
+
+        border-radius: 8px;
+
+        display: flex; align-items: center; justify-content: center;
+
+        flex-shrink: 0;
+
+    }
+
+    .label-small { font-size: 10px; font-weight: 700; color: " & _CorCinzaTexto & "; text-transform: uppercase; }
+
+    .value-main { font-size: 20px; font-weight: 700; color: " & _CorPretaTexto & "; margin-top: 2px; }
+
+    .value-sub { font-size: 14px; font-weight: 600; color: " & _CorCinzaTexto & "; }
+
+
+
+    /* ESPECÍFICO DO GAUGE */
+
+    .gauge-area { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; margin: 10px 0; }
+
+
+
+    /* ESTILOS DE PROGRESSO (BANCOS) */
+
+    .bank-header-row { display: flex; justify-content: space-between; align-items: flex-start; }
+
+    .bank-progress-area { margin-top: auto; margin-bottom: auto; }
+
+    .progress-track { width: 100%; height: 8px; background-color: " & _CorFundoBarra & "; border-radius: 99px; overflow: hidden; margin-top: 8px; margin-bottom: 12px; }
+
+    .progress-fill { height: 100%; background: " & _CorGradiente & "; border-radius: 99px; width: 0%; }
+
+    .bank-footer { display: flex; flex-direction: column; gap: 4px; }
+
+   
+
+    .legend-row { display: flex; justify-content: space-between; align-items: center; }
+
+    .legend-text { font-size: 11px; font-weight: 600; }
+
+    .legend-val { font-size: 14px; font-weight: 700; }
+
+    .dot { width: 6px; height: 6px; border-radius: 50%; margin-right: 8px; display: inline-block; }
+
+
+
+</style>
+
+"
+
+
+
+-- ==================================================================================
+
+-- 5. HTML
+
+-- ==================================================================================
+
+
+
+RETURN
+
+_CSS & "
+
+<div class='dashboard-container'>
+
+
+
+    <div class='card kpi-card'>
+
+        <div class='kpi-label'>Verba Total</div>
+
+        <div class='kpi-value'>" & FORMAT(_Val_VerbaTotal, "R$ #,##0,,.0M") & "</div>
+
+        <div class='kpi-sub'>Contrato Fixo</div>
+
+    </div>
+
+    <div class='card kpi-card'>
+
+        <div class='kpi-label'>Total Pago</div>
+
+        <div class='kpi-value'>" & FORMAT(_Val_TotalPago, "R$ #,##0,,.0M") & "</div>
+
+        <div class='kpi-sub'>Realizado</div>
+
+    </div>
+
+    <div class='card kpi-card'>
+
+        <div class='kpi-label'>Extras a Faturar</div>
+
+        <div class='kpi-value'>" & FORMAT(_Val_Faturar, "R$ #,##0,,.0M") & "</div>
+
+        <div class='kpi-sub'>Pendente</div>
+
+    </div>
+
+
+
+    <div class='card gauge-card'>
+
+        <div style='width: 100%; display: flex; align-items: center; gap: 10px; margin-bottom: 10px;'>
+
+             <div class='icon-box'>" & _Icon_Target & "</div>
+
+             <div class='label-small'>Progresso<br>Global</div>
+
+        </div>
+
+
+
+        <div class='gauge-area'>
+
+            " & _SVG_Gauge_Premium & "
+
+        </div>
+
+
+
+        <div style='width: 100%; display: flex; flex-direction: column; gap: 6px;'>
+
+            <div class='legend-row'>
+
+                <div style='display:flex; align-items:center;'><span class='dot' style='background-color: " & _CorPrimaria & ";'></span><span class='legend-text' style='color: " & _CorPrimaria & ";'>Realizado</span></div>
+
+                <div class='legend-val' style='color: " & _CorPrimaria & ";'>" & _Txt_GaugeAtual & "</div>
+
+            </div>
+
+            <div class='legend-row'>
+
+                <div style='display:flex; align-items:center;'><span class='dot' style='background-color: #D1D1D6;'></span><span class='legend-text' style='color: " & _CorCinzaTexto & ";'>Meta Total</span></div>
+
+                <div class='legend-val' style='color: " & _CorCinzaTexto & ";'>" & _Txt_GaugeMax & "</div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <div class='card' style='--progresso-final: " & _H_Pct & ";'>
+
+        <div class='bank-header-row'>
+
+            <div>
+
+                <div class='title-group'>
+
+                    <div class='icon-box'>" & _Icon_Clock & "</div>
+
+                    <div class='label-small'>Banco de<br>Horas</div>
+
+                </div>
+
+                <div class='value-main'>" & FORMAT(_H_Total_Barra, "R$ #,##0") & "</div>
+
+            </div>
+
+            <div style='text-align: right;'>
+
+                <div class='label-small' style='margin-bottom: 5px;'>Aguardando</div>
+
+                <div class='value-sub'>" & FORMAT(_H_Aguard, "R$ #,##0") & "</div>
+
+            </div>
+
+        </div>
+
+
+
+        <div class='bank-progress-area'>
+
+            <div style='display:flex; justify-content:space-between; font-size: 10px; font-weight: 600;'>
+
+                <span style='color: " & _CorPrimaria & ";'>Pago " & _H_Pct & "</span>
+
+                <span style='color: " & _CorCinzaTexto & ";'>Disp. " & _H_Pct_Disp & "</span>
+
+            </div>
+
+            <div class='progress-track'><div class='progress-fill animate-bar' style='width: " & _H_Pct & "'></div></div>
+
+        </div>
+
+
+
+        <div class='bank-footer'>
+
+            <div class='legend-row'>
+
+                <div style='display:flex; align-items:center;'><span class='dot' style='background-color: " & _CorPrimaria & ";'></span><span class='legend-text' style='color: " & _CorPrimaria & ";'>Pago</span></div>
+
+                <div class='legend-val' style='color: " & _CorPrimaria & ";'>" & FORMAT(_H_Pago, "R$ #,##0") & "</div>
+
+            </div>
+
+            <div class='legend-row'>
+
+                <div style='display:flex; align-items:center;'><span class='dot' style='background-color: #D1D1D6;'></span><span class='legend-text' style='color: " & _CorCinzaTexto & ";'>Disponível</span></div>
+
+                <div class='legend-val' style='color: " & _CorCinzaTexto & ";'>" & FORMAT(_H_Disp, "R$ #,##0") & "</div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <div class='card' style='--progresso-final: " & _P_Pct & ";'>
+
+        <div class='bank-header-row'>
+
+            <div>
+
+                <div class='title-group'>
+
+                    <div class='icon-box'>" & _Icon_Box & "</div>
+
+                    <div class='label-small'>Banco de<br>Peças</div>
+
+                </div>
+
+                <div class='value-main'>" & FORMAT(_P_Total_Barra, "R$ #,##0") & "</div>
+
+            </div>
+
+            <div style='text-align: right;'>
+
+                <div class='label-small' style='margin-bottom: 5px;'>Aguardando</div>
+
+                <div class='value-sub'>" & FORMAT(_P_Aguard, "R$ #,##0") & "</div>
+
+            </div>
+
+        </div>
+
+
+
+        <div class='bank-progress-area'>
+
+            <div style='display:flex; justify-content:space-between; font-size: 10px; font-weight: 600;'>
+
+                <span style='color: " & _CorPrimaria & ";'>Pago " & _P_Pct & "</span>
+
+                <span style='color: " & _CorCinzaTexto & ";'>Disp. " & _P_Pct_Disp & "</span>
+
+            </div>
+
+            <div class='progress-track'><div class='progress-fill animate-bar' style='width: " & _P_Pct & "'></div></div>
+
+        </div>
+
+
+
+        <div class='bank-footer'>
+
+            <div class='legend-row'>
+
+                <div style='display:flex; align-items:center;'><span class='dot' style='background-color: " & _CorPrimaria & ";'></span><span class='legend-text' style='color: " & _CorPrimaria & ";'>Pago</span></div>
+
+                <div class='legend-val' style='color: " & _CorPrimaria & ";'>" & FORMAT(_P_Pago, "R$ #,##0") & "</div>
+
+            </div>
+
+            <div class='legend-row'>
+
+                <div style='display:flex; align-items:center;'><span class='dot' style='background-color: #D1D1D6;'></span><span class='legend-text' style='color: " & _CorCinzaTexto & ";'>Disponível</span></div>
+
+                <div class='legend-val' style='color: " & _CorCinzaTexto & ";'>" & FORMAT(_P_Disp, "R$ #,##0") & "</div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+    <div class='card' style='--progresso-final: " & _S_Pct & ";'>
+
+        <div class='bank-header-row'>
+
+            <div>
+
+                <div class='title-group'>
+
+                    <div class='icon-box'>" & _Icon_Tool & "</div>
+
+                    <div class='label-small'>Banco de<br>Serviços</div>
+
+                </div>
+
+                <div class='value-main'>" & FORMAT(_S_Total_Barra, "R$ #,##0") & "</div>
+
+            </div>
+
+            <div style='text-align: right;'>
+
+                <div class='label-small' style='margin-bottom: 5px;'>Aguardando</div>
+
+                <div class='value-sub'>" & FORMAT(_S_Aguard, "R$ #,##0") & "</div>
+
+            </div>
+
+        </div>
+
+
+
+        <div class='bank-progress-area'>
+
+            <div style='display:flex; justify-content:space-between; font-size: 10px; font-weight: 600;'>
+
+                <span style='color: " & _CorPrimaria & ";'>Pago " & _S_Pct & "</span>
+
+                <span style='color: " & _CorCinzaTexto & ";'>Disp. " & _S_Pct_Disp & "</span>
+
+            </div>
+
+            <div class='progress-track'><div class='progress-fill animate-bar' style='width: " & _S_Pct & "'></div></div>
+
+        </div>
+
+
+
+        <div class='bank-footer'>
+
+            <div class='legend-row'>
+
+                <div style='display:flex; align-items:center;'><span class='dot' style='background-color: " & _CorPrimaria & ";'></span><span class='legend-text' style='color: " & _CorPrimaria & ";'>Pago</span></div>
+
+                <div class='legend-val' style='color: " & _CorPrimaria & ";'>" & FORMAT(_S_Pago, "R$ #,##0") & "</div>
+
+            </div>
+
+            <div class='legend-row'>
+
+                <div style='display:flex; align-items:center;'><span class='dot' style='background-color: #D1D1D6;'></span><span class='legend-text' style='color: " & _CorCinzaTexto & ";'>Disponível</span></div>
+
+                <div class='legend-val' style='color: " & _CorCinzaTexto & ";'>" & FORMAT(_S_Disp, "R$ #,##0") & "</div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+</div>
+
+"

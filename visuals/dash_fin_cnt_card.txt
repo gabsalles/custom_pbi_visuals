@@ -1,0 +1,226 @@
+Card_Detalhes_Inteligente_Logo = 
+-- ==============================================================
+-- 1. CAPTURA DE DADOS
+-- ==============================================================
+VAR _ContratoSelecionado = SELECTEDVALUE('Tabela_Financeira_Real'[Contrato]) 
+VAR _Fornecedor = SELECTEDVALUE('Tabela_Financeira_Real'[Fornecedor]) 
+VAR _InicioVigencia = SELECTEDVALUE('Tabela_Financeira_Real'[Data])
+VAR _FimVigencia = SELECTEDVALUE('Tabela_Financeira_Real'[Data])
+VAR _SLA = SELECTEDVALUE('Tabela_Financeira_Real'[Valor])
+
+-- Lógica de Estados
+VAR _TemContrato = NOT(ISBLANK(_ContratoSelecionado))
+VAR _TemApenasFornecedor = ISBLANK(_ContratoSelecionado) && NOT(ISBLANK(_Fornecedor))
+
+VAR _InicioFmt = FORMAT(_InicioVigencia, "dd/mmm/yyyy")
+VAR _FimFmt = FORMAT(_FimVigencia, "dd/mmm/yyyy")
+
+-- ==============================================================
+-- 2. MAPEAMENTO DE LOGOS (URLS PÚBLICAS)
+-- ==============================================================
+VAR _LogoUrl = 
+    SWITCH(TRUE(),
+        _Fornecedor = "AWS SERVICES", "https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg",
+        _Fornecedor = "CM COMANDOS", "https://cmcomandos.com.br/wp-content/uploads/2021/08/logo-cm-comandos-linear-estabilizadores-nobreaks.png",
+        _Fornecedor = "GOOGLE CLOUD", "https://upload.wikimedia.org/wikipedia/commons/5/51/Google_Cloud_logo.svg",
+        _Fornecedor = "MICROSOFT", "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg",
+        _Fornecedor = "SCHNEIDER", "https://upload.wikimedia.org/wikipedia/commons/9/95/Schneider_Electric_2007.svg",
+        _Fornecedor = "VERTIV", "https://upload.wikimedia.org/wikipedia/commons/c/c5/Vertiv.svg",
+        "https://cdn-icons-png.flaticon.com/512/4300/4300058.png" 
+    )
+
+-- ==============================================================
+-- 3. DESIGN SYSTEM
+-- ==============================================================
+VAR _Fonte = "-apple-system, BlinkMacSystemFont, 'Bradesco Sans', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+VAR _CorPrimaria = "#CC092F" 
+VAR _CorCinzaLabel = "#86868B"
+VAR _CorTextoPreto = "#1D1D1F"
+VAR _SombraCard = "0 4px 20px rgba(0, 0, 0, 0.08)" 
+
+-- ==============================================================
+-- 4. CSS (CORRIGIDO ALINHAMENTO)
+-- ==============================================================
+VAR _CSS = "
+<style>
+    * { box-sizing: border-box; }
+    ::-webkit-scrollbar { display: none; width: 0 !important; }
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden !important; background: transparent !important; }
+
+    /* ANIMAÇÃO */
+    @keyframes slideUpFade {
+        0% { opacity: 0; transform: translateY(15px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .widget-container {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        display: flex; flex-direction: column;
+        background: transparent; padding: 4px;
+    }
+
+    /* HEADER */
+    .section-header {
+        flex: 0 0 auto; 
+        background: linear-gradient(90deg, " & _CorPrimaria & " 0%, #B00020 100%);
+        padding: 15px 20px; color: white; border-radius: 12px;
+        display: flex; flex-direction: column; gap: 2px;
+        margin-bottom: 12px;
+        box-shadow: 0 4px 10px rgba(204, 9, 47, 0.2);
+        position: relative; z-index: 2;
+        opacity: 0; animation: slideUpFade 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+    
+    .section-header::after {
+        content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 40%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1));
+        transform: skewX(-20deg);
+    }
+
+    .header-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; font-weight: 600; }
+    .header-value { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+
+    /* CORPO */
+    .content-body {
+        flex: 1; background-color: white; border-radius: 16px; padding: 20px; 
+        box-shadow: " & _SombraCard & "; border: 1px solid #F2F2F7;
+        display: flex; flex-direction: column; justify-content: space-between;
+        overflow: hidden; position: relative;
+        opacity: 0; animation: slideUpFade 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; animation-delay: 0.1s;
+    }
+
+    /* LOGOS */
+    .logo-small-container {
+        position: absolute; top: 20px; right: 20px;
+        width: 48px; height: 48px;
+        background: white; border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #EBEBEB;
+        display: flex; align-items: center; justify-content: center; padding: 5px; z-index: 10;
+    }
+
+    .brand-hero-container {
+        flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 20px; text-align: center;
+    }
+    
+    .logo-large {
+        width: 120px; height: 120px; object-fit: contain;
+        filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+    }
+    
+    .brand-name-hero { font-size: 18px; font-weight: 700; color: " & _CorTextoPreto & "; letter-spacing: -0.5px; }
+
+    /* ITENS */
+    .timeline-wrapper { position: relative; padding-left: 20px; display: flex; flex-direction: column; gap: 20px; margin-top: 25px; flex: 0 0 auto; }
+    .timeline-wrapper::before { content: ''; position: absolute; left: 5px; top: 8px; bottom: 8px; width: 1px; background-color: #E0E0E0; }
+    .timeline-item { position: relative; }
+    .timeline-item::after { content: ''; position: absolute; left: -19px; top: 4px; width: 9px; height: 9px; border-radius: 50%; background-color: white; border: 2px solid " & _CorPrimaria & "; z-index: 2; }
+    .info-label { font-size: 10px; color: " & _CorCinzaLabel & "; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; letter-spacing: 0.5px; }
+    .info-value { font-size: 15px; color: " & _CorTextoPreto & "; font-weight: 600; }
+    .sla-wrapper { margin-top: auto; border-top: 1px solid #F4F4F5; padding-top: 15px; display: flex; justify-content: space-between; align-items: center; flex: 0 0 auto; }
+    .sla-pill { background-color: #FFF0F2; color: " & _CorPrimaria & "; font-weight: 700; font-size: 13px; padding: 4px 12px; border-radius: 6px; }
+
+    /* ESTADO VAZIO (CORREÇÃO DE ALINHAMENTO) */
+    .empty-card {
+        flex: 1; 
+        background-color: white; 
+        border-radius: 16px; 
+        box-shadow: " & _SombraCard & "; 
+        border: 1px solid #F2F2F7;
+        
+        /* Flexbox Centralizado */
+        display: flex; 
+        flex-direction: column; 
+        align-items: center;     /* Centro Horizontal */
+        justify-content: center; /* Centro Vertical */
+        text-align: center;      /* Garante que o texto multi-linhas fique centralizado */
+        
+        opacity: 0.7;
+        padding: 20px; /* Garante que o texto não cole nas bordas */
+    }
+
+</style>
+"
+
+-- ==============================================================
+-- 5. HTML: CENÁRIO 1 - CONTRATO SELECIONADO
+-- ==============================================================
+VAR _HtmlContrato = "
+<div class='widget-container'>
+    <div class='section-header'>
+        <div class='header-label'>CONTRATO</div>
+        <div class='header-value'>#" & _ContratoSelecionado & "</div>
+    </div>
+    <div class='content-body'>
+        <div class='logo-small-container'>
+            <img src='" & _LogoUrl & "' style='max-width:100%; max-height:100%; object-fit:contain;' onerror='this.style.display=""none""' />
+        </div>
+        <div class='timeline-wrapper'>
+            <div class='timeline-item'>
+                <div class='info-label'>INÍCIO</div>
+                <div class='info-value'>" & _InicioFmt & "</div>
+            </div>
+            <div class='timeline-item'>
+                <div class='info-label'>TÉRMINO</div>
+                <div class='info-value'>" & _FimFmt & "</div>
+            </div>
+        </div>
+        <div class='sla-wrapper'>
+            <div>
+                <div class='info-label'>STATUS SLA</div>
+                <div class='info-value' style='font-size:12px; color:"&_CorCinzaLabel&"'>Meta de Atendimento</div>
+            </div>
+            <div class='sla-pill'>" & _SLA & "</div>
+        </div>
+    </div>
+</div>
+"
+
+-- ==============================================================
+-- 6. HTML: CENÁRIO 2 - APENAS FORNECEDOR (BRAND CARD)
+-- ==============================================================
+VAR _HtmlFornecedor = "
+<div class='widget-container'>
+    <div class='section-header'>
+        <div class='header-label'>FORNECEDOR</div>
+        <div class='header-value' style='font-size: 16px; text-transform: uppercase;'>" & _Fornecedor & "</div>
+    </div>
+    <div class='content-body'>
+        <div class='brand-hero-container'>
+            <img src='" & _LogoUrl & "' class='logo-large' onerror='this.style.display=""none""' />
+            <div>
+                <div class='info-label'>STATUS</div>
+                <div class='info-value' style='color:"&_CorPrimaria&"'>Contrato Ativo</div>
+            </div>
+        </div>
+        <div style='text-align: center; color: "&_CorCinzaLabel&"; font-size: 11px; margin-top: 10px;'>
+            Selecione um contrato específico para ver detalhes de vigência e SLA.
+        </div>
+    </div>
+</div>
+"
+
+-- ==============================================================
+-- 7. HTML: CENÁRIO 3 - NADA SELECIONADO (VAZIO CORRIGIDO)
+-- ==============================================================
+VAR _HtmlVazio = "
+<div class='widget-container'>
+    <div class='section-header' style='background: #E5E5EA; box-shadow:none; color: #8E8E93;'>
+        <div class='header-label'>DETALHES</div>
+        <div class='header-value'>---</div>
+    </div>
+    <div class='empty-card'>
+        <div style='font-size: 12px; font-weight: 600; color:"&_CorCinzaLabel&"; text-align:center;'>
+            Selecione um Fornecedor<br>ou Contrato
+        </div>
+    </div>
+</div>
+"
+
+RETURN
+_CSS & 
+SWITCH(TRUE(),
+    _TemContrato, _HtmlContrato,
+    _TemApenasFornecedor, _HtmlFornecedor,
+    _HtmlVazio
+)

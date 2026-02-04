@@ -1,0 +1,465 @@
+Dashboard_Quality_Final = 
+/* ==================================================================================
+   DASHBOARD QUALIDADE DE DADOS - V9 (ANIMAÇÃO COUNT-UP NOS NÚMEROS)
+   ==================================================================================
+   NOVIDADES:
+   1. JavaScript (Count Up): Adicionado script para animar os números percentuais
+      dos anéis (de 0% até o valor final) suavemente.
+   2. Atributos de Dados: O HTML agora inclui 'data-target' para orientar a animação.
+   ================================================================================== */
+
+-- ==================================================================================
+-- 1. INPUTS DE DADOS (EDITE AQUI)
+-- ==================================================================================
+
+/* --- STATS (TOPO) --- */
+VAR _Stat1_Val      = "8"               -- [Total Catalogos]
+VAR _Stat1_Lbl      = "Catálogos"
+VAR _Stat2_Val      = "24"              -- [Total Schemas]
+VAR _Stat2_Lbl      = "Schemas"
+VAR _Stat3_Val      = "156"             -- [Total Tabelas]
+VAR _Stat3_Lbl      = "Tabelas"
+VAR _Stat4_Val      = "3.420"           -- [Total Campos]
+VAR _Stat4_Lbl      = "Campos"
+
+/* --- MÉTRICAS DE QUALIDADE (0 a 100) --- */
+VAR _M1_Val         = 98.5              -- Disponibilidade (Hero)
+VAR _M1_Lbl         = "Disponibilidade"
+VAR _M2_Val         = 92.0              -- Completude
+VAR _M2_Lbl         = "Completude"
+VAR _M3_Val         = 88.5              -- Consistência
+VAR _M3_Lbl         = "Consistência"
+VAR _M4_Val         = 95.0              -- Integridade
+VAR _M4_Lbl         = "Integridade"
+VAR _M5_Val         = 99.9              -- Unicidade
+VAR _M5_Lbl         = "Unicidade"
+VAR _M6_Val         = 12.5              -- Variação
+VAR _M6_Lbl         = "Variação"
+VAR _M7_Val         = 94.2              -- Validade
+VAR _M7_Lbl         = "Validade"
+
+/* --- EXECUÇÕES (Barra Lateral) --- */
+VAR _Ex1_Lbl = "Consistência"    VAR _Ex1_Val = 1540 VAR _Ex1_Max = 2000
+VAR _Ex2_Lbl = "Completude"      VAR _Ex2_Val = 1420 VAR _Ex2_Max = 2000
+VAR _Ex3_Lbl = "Disponibilidade" VAR _Ex3_Val = 1200 VAR _Ex3_Max = 2000
+VAR _Ex4_Lbl = "Integridade"     VAR _Ex4_Val = 980  VAR _Ex4_Max = 2000
+VAR _Ex5_Lbl = "Unicidade"       VAR _Ex5_Val = 850  VAR _Ex5_Max = 2000
+VAR _Ex6_Lbl = "Variação"        VAR _Ex6_Val = 400  VAR _Ex6_Max = 2000
+
+-- ==================================================================================
+-- 2. LÓGICA VISUAL & DESIGN SYSTEM
+-- ==================================================================================
+
+-- Cores Base
+VAR _BgPage         = "#F9FAFB"
+VAR _BgCard         = "rgba(255, 255, 255, 0.95)"
+VAR _TextDark       = "#111827"
+VAR _TextGray       = "#6B7280"
+VAR _RedAccent      = "#DC2626"
+VAR _RedBg          = "#FEF2F2"
+VAR _TrackColor     = "#F3F4F6"
+VAR _FillGray       = "#9CA3AF"
+
+-- 2.1 CÁLCULO DE CORES DOS GRADIENTES
+VAR _M1_Start = SWITCH(TRUE(), _M1_Val<75, "#900F15", _M1_Val<88, "#E63946", _M1_Val<94, "#FCD34D", _M1_Val<98, "#67E8F9", "#3B82F6")
+VAR _M1_End   = SWITCH(TRUE(), _M1_Val<75, "#E63946", _M1_Val<88, "#FCD34D", _M1_Val<94, "#67E8F9", _M1_Val<98, "#3B82F6", "#1E40AF")
+VAR _M2_Start = SWITCH(TRUE(), _M2_Val<75, "#900F15", _M2_Val<88, "#E63946", _M2_Val<94, "#FCD34D", _M2_Val<98, "#67E8F9", "#3B82F6")
+VAR _M2_End   = SWITCH(TRUE(), _M2_Val<75, "#E63946", _M2_Val<88, "#FCD34D", _M2_Val<94, "#67E8F9", _M2_Val<98, "#3B82F6", "#1E40AF")
+VAR _M3_Start = SWITCH(TRUE(), _M3_Val<75, "#900F15", _M3_Val<88, "#E63946", _M3_Val<94, "#FCD34D", _M3_Val<98, "#67E8F9", "#3B82F6")
+VAR _M3_End   = SWITCH(TRUE(), _M3_Val<75, "#E63946", _M3_Val<88, "#FCD34D", _M3_Val<94, "#67E8F9", _M3_Val<98, "#3B82F6", "#1E40AF")
+VAR _M4_Start = SWITCH(TRUE(), _M4_Val<75, "#900F15", _M4_Val<88, "#E63946", _M4_Val<94, "#FCD34D", _M4_Val<98, "#67E8F9", "#3B82F6")
+VAR _M4_End   = SWITCH(TRUE(), _M4_Val<75, "#E63946", _M4_Val<88, "#FCD34D", _M4_Val<94, "#67E8F9", _M4_Val<98, "#3B82F6", "#1E40AF")
+VAR _M5_Start = SWITCH(TRUE(), _M5_Val<75, "#900F15", _M5_Val<88, "#E63946", _M5_Val<94, "#FCD34D", _M5_Val<98, "#67E8F9", "#3B82F6")
+VAR _M5_End   = SWITCH(TRUE(), _M5_Val<75, "#E63946", _M5_Val<88, "#FCD34D", _M5_Val<94, "#67E8F9", _M5_Val<98, "#3B82F6", "#1E40AF")
+VAR _M6_Start = SWITCH(TRUE(), _M6_Val<75, "#900F15", _M6_Val<88, "#E63946", _M6_Val<94, "#FCD34D", _M6_Val<98, "#67E8F9", "#3B82F6")
+VAR _M6_End   = SWITCH(TRUE(), _M6_Val<75, "#E63946", _M6_Val<88, "#FCD34D", _M6_Val<94, "#67E8F9", _M6_Val<98, "#3B82F6", "#1E40AF")
+VAR _M7_Start = SWITCH(TRUE(), _M7_Val<75, "#900F15", _M7_Val<88, "#E63946", _M7_Val<94, "#FCD34D", _M7_Val<98, "#67E8F9", "#3B82F6")
+VAR _M7_End   = SWITCH(TRUE(), _M7_Val<75, "#E63946", _M7_Val<88, "#FCD34D", _M7_Val<94, "#67E8F9", _M7_Val<98, "#3B82F6", "#1E40AF")
+
+-- Ícones SVG (Paths)
+VAR _Icon_Db      = "M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5 M3 12c0 1.66 4 3 9 3s9-1.34 9-3" 
+VAR _Icon_Layout  = "M3 3h7v7H3z M14 3h7v7h-7z M14 14h7v7h-7z M3 14h7v7H3z"
+VAR _Icon_Table   = "M12 3v18 M3 3h18v18H3z M3 9h18 M3 15h18"
+VAR _Icon_List    = "M8 6h13 M8 12h13 M8 18h13 M3 6h.01 M3 12h.01 M3 18h.01"
+VAR _Icon_Chart   = "M18 20V10 M12 20V4 M6 20v6"
+VAR _Icon_Quality = "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10 M9 12l2 2 4-4"
+VAR _Icon_Exec    = "M8 6h13 M8 12h13 M8 18h13 M3 6h.01 M3 12h.01 M3 18h.01"
+VAR _Icon_Filter  = "M3 6h18 M6 12h12 M10 18h4"
+VAR _Icon_Chevron = "M6 9l6 6 6-6"
+
+-- ==================================================================================
+-- 3. ESTILOS CSS
+-- ==================================================================================
+VAR _CSS = "
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    .root {
+        font-family: 'Bradesco Sans', 'Inter', sans-serif;
+        background-color: " & _BgPage & ";
+        width: 1760px;
+        height: 1000px;
+        padding: 20px;
+        display: flex; flex-direction: column; gap: 20px;
+        overflow: hidden;
+        color: " & _TextDark & ";
+        margin: 0 auto;
+    }
+
+    /* --- TOPO: STATS --- */
+    .stats-container {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+        flex-shrink: 0; height: 75px;
+    }
+    .stat-card {
+        background: " & _BgCard & "; padding: 0 24px; border-radius: 16px;
+        display: flex; align-items: center; gap: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        border: 1px solid rgba(229, 231, 235, 0.6);
+        transition: transform 0.2s; height: 100%;
+    }
+    .stat-card:hover { transform: translateY(-4px); }
+    .stat-icon {
+        width: 48px; height: 48px; background: " & _RedBg & "; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        color: " & _RedAccent & "; flex-shrink: 0;
+    }
+    .stat-val { font-size: 28px; font-weight: 520; line-height: 1; letter-spacing: -0.5px; }
+    .stat-lbl { font-size: 13px; color: " & _TextGray & "; text-transform: uppercase; font-weight: 600; margin-top: 4px; letter-spacing: 0.5px; }
+
+    /* --- CONTROL DECK --- */
+    .control-deck {
+        display: flex; align-items: center; gap: 24px;
+        height: 60px; flex-shrink: 0;
+        background: white; border-radius: 16px; padding: 0 24px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        border: 1px solid rgba(229, 231, 235, 0.5);
+    }
+    .filter-header {
+        display: flex; align-items: center; gap: 10px;
+        border-right: 1px solid #E5E7EB; padding-right: 24px; height: 40px;
+    }
+    .filter-icon-box {
+        width: 32px; height: 32px; background: " & _RedBg & "; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center; color: " & _RedAccent & ";
+    }
+    .filter-title { font-size: 14px; font-weight: 700; color: " & _TextDark & "; text-transform: uppercase; letter-spacing: 0.5px; }
+    .filter-slots-area { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; flex: 1; }
+    .filter-input {
+        background: #F3F4F6; border-radius: 10px; height: 42px;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0 16px; border: 1px solid transparent; transition: all 0.2s; position: relative;
+    }
+    .filter-input:hover { background: white; border-color: #D1D5DB; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .filter-placeholder { font-size: 12px; font-weight: 600; color: " & _TextGray & "; text-transform: uppercase; pointer-events: none; }
+    .filter-chevron { color: #9CA3AF; width: 16px; height: 16px; }
+
+    /* --- MEIO: MONITORAMENTO --- */
+    .monitoring-grid {
+        display: grid; grid-template-columns: 2.5fr 1fr; gap: 20px;
+        flex: 0 0 auto; 
+    }
+    .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-shrink: 0; }
+    .section-title { font-size: 18px; font-weight: 700; color: #374151; display: flex; align-items: center; gap: 8px; }
+    .metrics-flex { display: flex; flex-wrap: wrap; gap: 20px; justify-content: flex-start; align-content: flex-start; }
+    
+    .metric-card {
+        background: white; border-radius: 16px; padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        width: calc(25% - 15px); height: 170px; 
+        transition: transform 0.2s; border: 1px solid rgba(0,0,0,0.02);
+    }
+    .metric-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+
+    /* ANIMAÇÃO DE ANEL */
+    @keyframes drawRing { 
+        from { stroke-dashoffset: var(--circ); } 
+        to { stroke-dashoffset: var(--off); } 
+    }
+    
+    .ring-circle {
+        animation: drawRing 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+
+    .metric-hero {
+        width: calc(50% - 10px); flex-direction: row; gap: 30px;
+        background: linear-gradient(135deg, #FFFFFF 0%, #F9FAFB 100%);
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    .metric-hero .ring-chart { width: 130px; height: 130px; margin-bottom: 0; }
+    .metric-hero .ring-val { font-size: 26px; }
+    .metric-hero .ring-lbl { font-size: 16px; text-align: left; margin-top: 5px; }
+    .hero-text-content { display: flex; flex-direction: column; align-items: flex-start; }
+    .hero-badge { background: #D1FAE5; color: #065F46; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; margin-bottom: 5px; text-transform: uppercase; }
+
+    .ring-chart { width: 90px; height: 90px; position: relative; margin-bottom: 10px; }
+    .ring-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+    .ring-val { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; font-weight: 600; color: " & _TextDark & "; }
+    .ring-lbl { font-size: 13px; font-weight: 600; color: " & _TextGray & "; text-align: center; }
+
+    /* Direita: Sidebar */
+    .sidebar-wrapper { display: flex; flex-direction: column; height: 100%; }
+    .sidebar-card {
+        background: white; border-radius: 16px; padding: 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        flex: 1; display: flex; flex-direction: column;
+        border: 1px solid rgba(0,0,0,0.02); overflow: hidden;
+    }
+    .progress-list { 
+        display: flex; flex-direction: column; gap: 20px; margin-top: 5px; 
+        overflow-y: auto; padding-right: 10px; flex: 1; justify-content: center;
+    }
+    .progress-list::-webkit-scrollbar { width: 4px; }
+    .progress-list::-webkit-scrollbar-thumb { background-color: #E5E7EB; border-radius: 4px; }
+
+    .progress-item { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+    .prog-head { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: " & _TextGray & "; }
+    .prog-val { font-weight: 700; color: " & _TextDark & "; }
+    .prog-bar { width: 100%; height: 10px; background: " & _TrackColor & "; border-radius: 6px; overflow: hidden; }
+    .prog-fill { height: 100%; background: " & _FillGray & "; border-radius: 6px; animation: slideRight 1s ease-out forwards; }
+
+    /* --- BASE: TABELAS --- */
+    .bottom-section-wrapper { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+    .tables-section { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; flex: 1; height: 100%; }
+    .table-card {
+        background: white; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(0,0,0,0.02); height: 100%;
+        position: relative;
+    }
+    .table-body-placeholder {
+        flex: 1; margin: 16px; border: 2px dashed #E5E7EB; border-radius: 12px;
+        background: rgba(249, 250, 251, 0.5); display: flex; flex-direction: column;
+        align-items: center; justify-content: center; color: #9CA3AF; gap: 16px;
+    }
+    .placeholder-badge {
+        background: #F3F4F6; color: #6B7280; font-size: 12px; font-weight: 700; padding: 8px 16px; border-radius: 6px; text-transform: uppercase;
+        position: absolute; top: 20px; right: 20px;
+    }
+
+    @keyframes slideRight { from { width: 0; } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+"
+
+-- ==================================================================================
+-- 4. CONSTRUÇÃO DO HTML
+-- ==================================================================================
+
+/* --- CONTROL DECK (FILTROS) --- */
+VAR _HTML_Filter_Deck = "
+<div class='control-deck'>
+    <div class='filter-header'>
+        <div class='filter-icon-box'>
+            <svg viewBox='0 0 24 24' width='18' height='18' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='"&_Icon_Filter&"'/></svg>
+        </div>
+        <div class='filter-title'>Filtros</div>
+    </div>
+    <div class='filter-slots-area'>
+        <!-- Slicer 1 -->
+        <div class='filter-input'>
+            <span class='filter-placeholder'>Data Execução</span>
+            <svg class='filter-chevron' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='"&_Icon_Chevron&"'/></svg>
+        </div>
+        <!-- Slicer 2 -->
+        <div class='filter-input'>
+            <span class='filter-placeholder'>Catálogos</span>
+            <svg class='filter-chevron' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='"&_Icon_Chevron&"'/></svg>
+        </div>
+        <!-- Slicer 3 -->
+        <div class='filter-input'>
+            <span class='filter-placeholder'>Schemas</span>
+            <svg class='filter-chevron' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='"&_Icon_Chevron&"'/></svg>
+        </div>
+        <!-- Slicer 4 -->
+        <div class='filter-input'>
+            <span class='filter-placeholder'>Tabelas</span>
+            <svg class='filter-chevron' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='"&_Icon_Chevron&"'/></svg>
+        </div>
+        <!-- Slicer 5 -->
+        <div class='filter-input'>
+            <span class='filter-placeholder'>Campos</span>
+            <svg class='filter-chevron' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='"&_Icon_Chevron&"'/></svg>
+        </div>
+    </div>
+</div>
+"
+
+/* --- FUNÇÃO AUXILIAR: ANEL HERO (COM CLASS COUNT-UP) --- */
+VAR _Circumference = 2 * 3.14159 * 45 
+VAR _CircumferenceHero = 2 * 3.14159 * 60 
+
+VAR _HTML_Ring_Hero = 
+    "<div class='metric-card metric-hero'>
+        <div class='ring-chart'>
+            <svg class='ring-svg' viewBox='0 0 140 140'>
+                <defs><linearGradient id='gradHero' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='" & _M1_End & "'/><stop offset='100%' stop-color='" & _M1_Start & "'/></linearGradient></defs>
+                <circle cx='70' cy='70' r='60' fill='none' stroke='" & _TrackColor & "' stroke-width='10' />
+                <circle class='ring-circle' cx='70' cy='70' r='60' fill='none' stroke='url(#gradHero)' stroke-width='10' stroke-linecap='round' stroke-dasharray='" & _CircumferenceHero & "' style='--circ:" & _CircumferenceHero & "; --off:" & (_CircumferenceHero - (_CircumferenceHero * _M1_Val / 100)) & ";' />
+            </svg>
+            <div class='ring-val'><span class='count-up' data-target='"&_M1_Val&"'>" & FORMAT(_M1_Val, "0.0") & "</span>%</div>
+        </div>
+        <div class='hero-text-content'>
+            <span class='hero-badge'>Prioridade Alta</span>
+            <div class='ring-lbl'>" & _M1_Lbl & "</div>
+            <div style='font-size:13px; color:" & _TextGray & "; margin-top:4px'>Métrica Crítica</div>
+        </div>
+    </div>"
+
+/* --- GRIDS DE MÉTRICAS (M2-M7 com CLASS COUNT-UP) --- */
+VAR _HTML_Metrics_Grid = 
+    "<div class='metrics-flex'>" & 
+    _HTML_Ring_Hero & 
+    "<div class='metric-card'><div class='ring-chart'><svg class='ring-svg' viewBox='0 0 100 100'><defs><linearGradient id='grad2' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='" & _M2_End & "'/><stop offset='100%' stop-color='" & _M2_Start & "'/></linearGradient></defs><circle cx='50' cy='50' r='45' fill='none' stroke='" & _TrackColor & "' stroke-width='8'/><circle class='ring-circle' cx='50' cy='50' r='45' fill='none' stroke='url(#grad2)' stroke-width='8' stroke-linecap='round' stroke-dasharray='" & _Circumference & "' style='--circ:" & _Circumference & "; --off:" & (_Circumference - (_Circumference * _M2_Val / 100)) & ";' /></svg><div class='ring-val'><span class='count-up' data-target='"&_M2_Val&"'>" & FORMAT(_M2_Val, "0.0") & "</span>%</div></div><div class='ring-lbl'>" & _M2_Lbl & "</div></div>" &
+    "<div class='metric-card'><div class='ring-chart'><svg class='ring-svg' viewBox='0 0 100 100'><defs><linearGradient id='grad3' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='" & _M3_End & "'/><stop offset='100%' stop-color='" & _M3_Start & "'/></linearGradient></defs><circle cx='50' cy='50' r='45' fill='none' stroke='" & _TrackColor & "' stroke-width='8'/><circle class='ring-circle' cx='50' cy='50' r='45' fill='none' stroke='url(#grad3)' stroke-width='8' stroke-linecap='round' stroke-dasharray='" & _Circumference & "' style='--circ:" & _Circumference & "; --off:" & (_Circumference - (_Circumference * _M3_Val / 100)) & ";' /></svg><div class='ring-val'><span class='count-up' data-target='"&_M3_Val&"'>" & FORMAT(_M3_Val, "0.0") & "</span>%</div></div><div class='ring-lbl'>" & _M3_Lbl & "</div></div>" &
+    "<div class='metric-card'><div class='ring-chart'><svg class='ring-svg' viewBox='0 0 100 100'><defs><linearGradient id='grad4' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='" & _M4_End & "'/><stop offset='100%' stop-color='" & _M4_Start & "'/></linearGradient></defs><circle cx='50' cy='50' r='45' fill='none' stroke='" & _TrackColor & "' stroke-width='8'/><circle class='ring-circle' cx='50' cy='50' r='45' fill='none' stroke='url(#grad4)' stroke-width='8' stroke-linecap='round' stroke-dasharray='" & _Circumference & "' style='--circ:" & _Circumference & "; --off:" & (_Circumference - (_Circumference * _M4_Val / 100)) & ";' /></svg><div class='ring-val'><span class='count-up' data-target='"&_M4_Val&"'>" & FORMAT(_M4_Val, "0.0") & "</span>%</div></div><div class='ring-lbl'>" & _M4_Lbl & "</div></div>" &
+    "<div class='metric-card'><div class='ring-chart'><svg class='ring-svg' viewBox='0 0 100 100'><defs><linearGradient id='grad5' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='" & _M5_End & "'/><stop offset='100%' stop-color='" & _M5_Start & "'/></linearGradient></defs><circle cx='50' cy='50' r='45' fill='none' stroke='" & _TrackColor & "' stroke-width='8'/><circle class='ring-circle' cx='50' cy='50' r='45' fill='none' stroke='url(#grad5)' stroke-width='8' stroke-linecap='round' stroke-dasharray='" & _Circumference & "' style='--circ:" & _Circumference & "; --off:" & (_Circumference - (_Circumference * _M5_Val / 100)) & ";' /></svg><div class='ring-val'><span class='count-up' data-target='"&_M5_Val&"'>" & FORMAT(_M5_Val, "0.0") & "</span>%</div></div><div class='ring-lbl'>" & _M5_Lbl & "</div></div>" &
+    "<div class='metric-card'><div class='ring-chart'><svg class='ring-svg' viewBox='0 0 100 100'><defs><linearGradient id='grad6' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='" & _M6_End & "'/><stop offset='100%' stop-color='" & _M6_Start & "'/></linearGradient></defs><circle cx='50' cy='50' r='45' fill='none' stroke='" & _TrackColor & "' stroke-width='8'/><circle class='ring-circle' cx='50' cy='50' r='45' fill='none' stroke='url(#grad6)' stroke-width='8' stroke-linecap='round' stroke-dasharray='" & _Circumference & "' style='--circ:" & _Circumference & "; --off:" & (_Circumference - (_Circumference * _M6_Val / 100)) & ";' /></svg><div class='ring-val'><span class='count-up' data-target='"&_M6_Val&"'>" & FORMAT(_M6_Val, "0.0") & "</span>%</div></div><div class='ring-lbl'>" & _M6_Lbl & "</div></div>" &
+    "<div class='metric-card'><div class='ring-chart'><svg class='ring-svg' viewBox='0 0 100 100'><defs><linearGradient id='grad7' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='" & _M7_End & "'/><stop offset='100%' stop-color='" & _M7_Start & "'/></linearGradient></defs><circle cx='50' cy='50' r='45' fill='none' stroke='" & _TrackColor & "' stroke-width='8'/><circle class='ring-circle' cx='50' cy='50' r='45' fill='none' stroke='url(#grad7)' stroke-width='8' stroke-linecap='round' stroke-dasharray='" & _Circumference & "' style='--circ:" & _Circumference & "; --off:" & (_Circumference - (_Circumference * _M7_Val / 100)) & ";' /></svg><div class='ring-val'><span class='count-up' data-target='"&_M7_Val&"'>" & FORMAT(_M7_Val, "0.0") & "</span>%</div></div><div class='ring-lbl'>" & _M7_Lbl & "</div></div>" &
+    "</div>"
+
+/* --- ESTRUTURA GERAL --- */
+
+VAR _HTML_Stats = "
+<div class='stats-container'>
+    <div class='stat-card'>
+        <div class='stat-icon'><svg viewBox='0 0 24 24' width='32' height='32' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><ellipse cx='12' cy='5' rx='9' ry='3'/><path d='"&_Icon_Db&"'/></svg></div>
+        <div><div class='stat-val'>"&_Stat1_Val&"</div><div class='stat-lbl'>"&_Stat1_Lbl&"</div></div>
+    </div>
+    <div class='stat-card'>
+        <div class='stat-icon'><svg viewBox='0 0 24 24' width='32' height='32' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='"&_Icon_Layout&"'/></svg></div>
+        <div><div class='stat-val'>"&_Stat2_Val&"</div><div class='stat-lbl'>"&_Stat2_Lbl&"</div></div>
+    </div>
+    <div class='stat-card'>
+        <div class='stat-icon'><svg viewBox='0 0 24 24' width='32' height='32' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='"&_Icon_Table&"'/></svg></div>
+        <div><div class='stat-val'>"&_Stat3_Val&"</div><div class='stat-lbl'>"&_Stat3_Lbl&"</div></div>
+    </div>
+    <div class='stat-card'>
+        <div class='stat-icon'><svg viewBox='0 0 24 24' width='32' height='32' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='"&_Icon_List&"'/></svg></div>
+        <div><div class='stat-val'>"&_Stat4_Val&"</div><div class='stat-lbl'>"&_Stat4_Lbl&"</div></div>
+    </div>
+</div>"
+
+VAR _HTML_Monitoring = "
+<div class='monitoring-grid'>
+    <div>
+        <div class='section-header'>
+            <div style='color: "&_RedAccent&"'><svg viewBox='0 0 24 24' width='28' height='28' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='"&_Icon_Quality&"'/></svg></div>
+            <h3 class='section-title'>Saúde dos Dados</h3>
+        </div>
+        " & _HTML_Metrics_Grid & "
+    </div>
+    
+    <div class='sidebar-wrapper'>
+        <div class='section-header'>
+            <div style='color: "&_TextGray&"'><svg viewBox='0 0 24 24' width='28' height='28' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='"&_Icon_Exec&"'/></svg></div>
+            <h3 class='section-title'>Execuções</h3>
+        </div>
+        <div class='sidebar-card'>
+            <div class='progress-list'>
+                <!-- TRUQUE: style='order: -[VALOR]' ordena automaticamente Maior -> Menor -->
+                <div class='progress-item' style='order: -" & _Ex1_Val & "'>
+                    <div class='prog-head'><span>"&_Ex1_Lbl&"</span><span class='prog-val'>"&_Ex1_Val&"</span></div>
+                    <div class='prog-bar'><div class='prog-fill' style='width: "&(_Ex1_Val/_Ex1_Max)*100&"%'></div></div>
+                </div>
+                <div class='progress-item' style='order: -" & _Ex2_Val & "'>
+                    <div class='prog-head'><span>"&_Ex2_Lbl&"</span><span class='prog-val'>"&_Ex2_Val&"</span></div>
+                    <div class='prog-bar'><div class='prog-fill' style='width: "&(_Ex2_Val/_Ex2_Max)*100&"%'></div></div>
+                </div>
+                <div class='progress-item' style='order: -" & _Ex3_Val & "'>
+                    <div class='prog-head'><span>"&_Ex3_Lbl&"</span><span class='prog-val'>"&_Ex3_Val&"</span></div>
+                    <div class='prog-bar'><div class='prog-fill' style='width: "&(_Ex3_Val/_Ex3_Max)*100&"%'></div></div>
+                </div>
+                <div class='progress-item' style='order: -" & _Ex4_Val & "'>
+                    <div class='prog-head'><span>"&_Ex4_Lbl&"</span><span class='prog-val'>"&_Ex4_Val&"</span></div>
+                    <div class='prog-bar'><div class='prog-fill' style='width: "&(_Ex4_Val/_Ex4_Max)*100&"%'></div></div>
+                </div>
+                <div class='progress-item' style='order: -" & _Ex5_Val & "'>
+                    <div class='prog-head'><span>"&_Ex5_Lbl&"</span><span class='prog-val'>"&_Ex5_Val&"</span></div>
+                    <div class='prog-bar'><div class='prog-fill' style='width: "&(_Ex5_Val/_Ex5_Max)*100&"%'></div></div>
+                </div>
+                <div class='progress-item' style='order: -" & _Ex6_Val & "'>
+                    <div class='prog-head'><span>"&_Ex6_Lbl&"</span><span class='prog-val'>"&_Ex6_Val&"</span></div>
+                    <div class='prog-bar'><div class='prog-fill' style='width: "&(_Ex6_Val/_Ex6_Max)*100&"%'></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>"
+
+VAR _HTML_Bottom = "
+<div class='bottom-section-wrapper'>
+    <div class='section-header'>
+        <div style='color: "&_RedAccent&"'><svg viewBox='0 0 24 24' width='28' height='28' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='"&_Icon_Table&"'/></svg></div>
+        <h3 class='section-title'>Visão Detalhada</h3>
+    </div>
+    
+    <div class='tables-section'>
+        <div class='table-card'>
+            <!-- Header Removido para limpeza -->
+            <div class='table-body-placeholder'>
+                <span class='placeholder-badge'>Regras de Qualidade</span>
+                <svg viewBox='0 0 24 24' width='48' height='48' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='"&_Icon_Table&"'/></svg>
+                <span style='font-weight:500; font-size:16px'>Colunas: Nome Tabela, Métrica, Status</span>
+            </div>
+        </div>
+
+        <div class='table-card'>
+            <!-- Header Removido para limpeza -->
+            <div class='table-body-placeholder'>
+                <span class='placeholder-badge'>Histórico</span>
+                <svg viewBox='0 0 24 24' width='48' height='48' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='"&_Icon_Chart&"'/></svg>
+                <span style='font-weight:500; font-size:16px'>Eixo X: Data Execução | Eixo Y: Falhas</span>
+            </div>
+        </div>
+    </div>
+</div>"
+
+/* --- 5. JAVASCRIPT: ANIMAÇÃO COUNT UP --- */
+VAR _JS_Script = "
+<script>
+    (function() {
+        // Função para animar números
+        var animateValue = function(element, start, end, duration) {
+            var range = end - start;
+            var current = start;
+            var increment = end > start ? 1 : -1;
+            var stepTime = Math.abs(Math.floor(duration / (range * 10))); // Acelera
+            if(stepTime < 10) stepTime = 10;
+            
+            var timer = setInterval(function() {
+                // Aumenta o passo se estiver longe
+                current += (end - current) * 0.1; 
+                if (Math.abs(end - current) < 0.1) current = end;
+                
+                element.innerText = current.toFixed(1);
+                
+                if (current == end) {
+                    clearInterval(timer);
+                }
+            }, stepTime);
+        };
+
+        // Seleciona todos os elementos com a classe count-up
+        var counters = document.querySelectorAll('.count-up');
+        counters.forEach(counter => {
+            var target = parseFloat(counter.getAttribute('data-target'));
+            if (!isNaN(target)) {
+                animateValue(counter, 0, target, 1500); // 1.5s de duração
+            }
+        });
+    })();
+</script>
+"
+
+RETURN 
+    _CSS & 
+    "<div class='root'>" & 
+        _HTML_Stats & 
+        _HTML_Filter_Deck & 
+        _HTML_Monitoring & 
+        _HTML_Bottom & 
+    "</div>" & 
+    _JS_Script
