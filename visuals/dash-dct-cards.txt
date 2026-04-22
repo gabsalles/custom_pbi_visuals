@@ -1,0 +1,261 @@
+Medida_Painel_HTML = 
+// ==============================================================================
+// 1. VARIÁVEIS DE DADOS (Substitua os valores fixos pelas suas Medidas DAX)
+// Exemplo: VAR _PUE_Valor = [Sua Medida PUE]
+// ==============================================================================
+VAR _PUE_Valor = 1.40 
+VAR _PUE_Var   = 0.08  // Variação vs Mês Anterior
+
+VAR _WUE_Valor = 1.71 
+VAR _WUE_Var   = 0.21  // Variação vs Mês Anterior
+
+VAR _CUE_Valor = 0.06 
+VAR _CUE_Var   = -0.02 // Variação vs Mês Anterior
+
+VAR _Localizacao = "CTI Osasco - SP" // Pode ser uma medida como SELECTEDVALUE(Tabela[Local])
+
+// ==============================================================================
+// 2. LÓGICAS DE CLASSIFICAÇÃO E CORES (Regras baseadas no seu Tooltip)
+// ==============================================================================
+
+// --- LÓGICA PUE ---
+VAR _PUE_Class = 
+    SWITCH(TRUE(),
+        _PUE_Valor <= 1.20, "ÓTIMO",
+        _PUE_Valor <= 1.49, "BOM",
+        _PUE_Valor <= 1.99, "MEDIANO",
+        "RUIM"
+    )
+VAR _PUE_Badge_Style = 
+    SWITCH(_PUE_Class,
+        "ÓTIMO", "background-color: #dcfce7; color: #166534;", // Verde
+        "BOM", "background-color: #ccfbf1; color: #0f766e;", // Verde Água
+        "MEDIANO", "background-color: #fef0d9; color: #d97706;", // Amarelo
+        "RUIM", "background-color: #fee2e2; color: #991b1b;" // Vermelho
+    )
+
+// --- LÓGICA WUE ---
+VAR _WUE_Class = 
+    SWITCH(TRUE(),
+        _WUE_Valor <= 0.49, "BOM",
+        _WUE_Valor <= 1.89, "MÉDIO",
+        "RUIM"
+    )
+VAR _WUE_Badge_Style = 
+    SWITCH(_WUE_Class,
+        "BOM", "background-color: #dcfce7; color: #166534;", // Verde
+        "MÉDIO", "background-color: #fef0d9; color: #d97706;", // Amarelo
+        "RUIM", "background-color: #fee2e2; color: #991b1b;" // Vermelho
+    )
+
+// --- LÓGICA CUE ---
+VAR _CUE_Class = 
+    SWITCH(TRUE(),
+        _CUE_Valor <= 0.10, "EFICIENTE",
+        _CUE_Valor <= 0.49, "REGULAR",
+        "INEFICIENTE"
+    )
+VAR _CUE_Badge_Style = 
+    SWITCH(_CUE_Class,
+        "EFICIENTE", "background-color: #e0f2fe; color: #0284c7;", // Azul
+        "REGULAR", "background-color: #fef0d9; color: #d97706;", // Amarelo
+        "INEFICIENTE", "background-color: #fee2e2; color: #991b1b;" // Vermelho
+    )
+
+// ==============================================================================
+// 3. LÓGICAS DE VARIAÇÃO (Setas de Subida/Descida)
+// Obs: Como as métricas são de consumo, "Subir" é Ruim (Vermelho), "Descer" é Bom (Verde)
+// ==============================================================================
+VAR _SetaSobe = "<svg class='var-icon' viewBox='0 0 24 24' fill='currentColor'><path d='M13 5.41V21a1 1 0 0 1-2 0V5.41l-5.3 5.3a1 1 0 1 1-1.4-1.42l7-7a1 1 0 0 1 1.4 0l7 7a1 1 0 0 1-1.4 1.42z'/></svg>"
+VAR _SetaDesce = "<svg class='var-icon' viewBox='0 0 24 24' fill='currentColor'><path d='M11 18.59V3a1 1 0 0 1 2 0v15.59l5.3-5.3a1 1 0 0 1 1.4 1.42l-7-7a1 1 0 0 1-1.4 0l-7-7a1 1 0 0 1 1.4-1.42z'/></svg>"
+
+// PUE Variação
+VAR _PUE_Var_Icon = IF(_PUE_Var > 0, _SetaSobe, _SetaDesce)
+VAR _PUE_Var_ColorClass = IF(_PUE_Var > 0, "var-bad", "var-good")
+VAR _PUE_Var_Text = FORMAT(_PUE_Var, "+0.00;-0.00;0.00") & " vs mês ant."
+
+// WUE Variação
+VAR _WUE_Var_Icon = IF(_WUE_Var > 0, _SetaSobe, _SetaDesce)
+VAR _WUE_Var_ColorClass = IF(_WUE_Var > 0, "var-bad", "var-good")
+VAR _WUE_Var_Text = FORMAT(_WUE_Var, "+0.00;-0.00;0.00") & " vs mês ant."
+
+// CUE Variação
+VAR _CUE_Var_Icon = IF(_CUE_Var > 0, _SetaSobe, _SetaDesce)
+VAR _CUE_Var_ColorClass = IF(_CUE_Var > 0, "var-bad", "var-good")
+VAR _CUE_Var_Text = FORMAT(_CUE_Var, "+0.00;-0.00;0.00") & " vs mês ant."
+
+
+// ==============================================================================
+// 4. CSS (Design do painel)
+// ==============================================================================
+VAR _CSS = "
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Bradesco Sans', 'Segoe UI', Tahoma, sans-serif; }
+    body { background-color: #f0f2f5; padding: 20px; width: 100%; height: 100vh; overflow: hidden; }
+    .dashboard-container { display: flex; flex-direction: column; gap: 16px; width: 100%; height: 100%; }
+    .cards-row { display: flex; gap: 16px; justify-content: space-between; flex: 1; }
+    .card { background-color: #ffffff; border-radius: 8px; padding: 16px 20px; flex: 1 1 0; min-width: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; flex-direction: column; position: relative; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .card-title { font-size: 11px; font-weight: 700; color: #9ca3af; letter-spacing: 0.5px; }
+    .card-icon { color: #e2e8f0; }
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+    .info-container { position: relative; display: flex; align-items: center; }
+    .info-btn { background: none; border: none; color: #cbd5e1; cursor: help; display: flex; align-items: center; justify-content: center; transition: color 0.2s; }
+    .info-btn:hover { color: #64748b; }
+    .tooltip { visibility: hidden; opacity: 0; position: absolute; top: 100%; right: 0; margin-top: 8px; background-color: #ffffff; border: 1px solid #f1f5f9; border-radius: 8px; padding: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); z-index: 50; width: 190px; transition: opacity 0.2s, visibility 0.2s; }
+    .info-container:hover .tooltip { visibility: visible; opacity: 1; }
+    .tooltip-header { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; letter-spacing: 0.5px; }
+    .tooltip-list { display: flex; flex-direction: column; gap: 8px; }
+    .tooltip-item { display: flex; align-items: center; justify-content: space-between; font-size: 11px; }
+    .tooltip-item-left { display: flex; align-items: center; gap: 6px; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; }
+    .dot-green { background-color: #10b981; } .dot-blue { background-color: #0ea5e9; } .dot-teal { background-color: #14b8a6; } .dot-yellow { background-color: #f59e0b; } .dot-red { background-color: #ef4444; }
+    .tooltip-label { font-weight: 600; color: #475569; }
+    .tooltip-value { color: #64748b; font-variant-numeric: tabular-nums; }
+    .card-value-area { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .card-value { font-size: 36px; font-weight: 700; line-height: 1; color: #1f2937; }
+    .variation { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; margin-top: -6px; margin-bottom: 16px; }
+    .var-good { color: #10b981; } .var-bad { color: #ef4444; } .var-neutral { color: #64748b; }
+    .var-icon { width: 12px; height: 12px; }
+    .badge { padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+    .card-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: auto; }
+    .card-target { font-size: 11px; color: #9ca3af; }
+    .sparkline { width: 60px; height: 20px; }
+    .location-bar { background-color: #ffffff; border-radius: 8px; padding: 12px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
+    .loc-left { display: flex; align-items: center; gap: 12px; }
+    .loc-label-area { display: flex; align-items: center; gap: 8px; }
+    .loc-label { font-size: 12px; font-weight: 700; color: #4b5563; }
+    .loc-badge { background-color: #e6f7f8; color: #0d9488; padding: 4px 16px; border-radius: 16px; font-size: 12px; font-weight: 700; }
+    .loc-right { display: flex; align-items: center; gap: 6px; }
+    .status-dot { width: 8px; height: 8px; background-color: #10b981; border-radius: 50%; }
+    .status-text { font-size: 11px; font-weight: 700; color: #10b981; letter-spacing: 0.5px; }
+</style>
+"
+
+// ==============================================================================
+// 5. HTML FINAL (Constrói o código substituindo tudo dinamicamente)
+// ==============================================================================
+VAR _HTML = "
+<div class='dashboard-container'>
+    <div class='cards-row'>
+        
+        <!-- CARD PUE -->
+        <div class='card'>
+            <div class='card-header'>
+                <span class='card-title'>PUE (POWER USAGE)</span>
+                <div class='header-actions'>
+                    <div class='info-container'>
+                        <div class='info-btn'><svg viewBox='0 0 24 24' width='14' height='14' fill='currentColor'><path d='M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'/></svg></div>
+                        <div class='tooltip'>
+                            <div class='tooltip-header'>Métricas e Classificação</div>
+                            <div class='tooltip-list'>
+                                <div class='tooltip-item'><div class='tooltip-item-left'><span class='dot dot-green'></span><span class='tooltip-label'>ÓTIMO</span></div><span class='tooltip-value'>até 1,20</span></div>
+                                <div class='tooltip-item'><div class='tooltip-item-left'><span class='dot dot-teal'></span><span class='tooltip-label'>BOM</span></div><span class='tooltip-value'>1,21 a 1,49</span></div>
+                                <div class='tooltip-item'><div class='tooltip-item-left'><span class='dot dot-yellow'></span><span class='tooltip-label'>MEDIANO</span></div><span class='tooltip-value'>1,50 a 1,99</span></div>
+                                <div class='tooltip-item'><div class='tooltip-item-left'><span class='dot dot-red'></span><span class='tooltip-label'>RUIM</span></div><span class='tooltip-value'>acima de 2,00</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <svg class='card-icon' viewBox='0 0 24 24' width='16' height='16' fill='currentColor'><path d='M13 2L3 14h9l-1 8 10-12h-9l1-8z'/></svg>
+                </div>
+            </div>
+            <div class='card-value-area'>
+                <span class='card-value'>" & FORMAT(_PUE_Valor, "0.00") & "</span>
+                <span class='badge' style='" & _PUE_Badge_Style & "'>" & _PUE_Class & "</span>
+            </div>
+            <div class='variation " & _PUE_Var_ColorClass & "'>
+                " & _PUE_Var_Icon & "
+                <span>" & _PUE_Var_Text & "</span>
+            </div>
+            <div class='card-footer'>
+                <span class='card-target'>Target < 1.50</span>
+                <svg class='sparkline' viewBox='0 0 60 20'><path d='M0,15 Q15,5 30,15 T60,5' fill='none' stroke='#fca5a5' stroke-width='1.5'/></svg>
+            </div>
+        </div>
+
+        <!-- CARD WUE -->
+        <div class='card'>
+            <div class='card-header'>
+                <span class='card-title'>WUE (WATER USAGE)</span>
+                <div class='header-actions'>
+                    <div class='info-container'>
+                        <div class='info-btn'><svg viewBox='0 0 24 24' width='14' height='14' fill='currentColor'><path d='M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'/></svg></div>
+                        <div class='tooltip'>
+                            <div class='tooltip-header'>Métricas e Classificação</div>
+                            <div class='tooltip-list'>
+                                <div class='tooltip-item'><div class='tooltip-item-left'><span class='dot dot-green'></span><span class='tooltip-label'>BOM</span></div><span class='tooltip-value'>até 0,49</span></div>
+                                <div class='tooltip-item'><div class='tooltip-item-left'><span class='dot dot-yellow'></span><span class='tooltip-label'>MÉDIO</span></div><span class='tooltip-value'>0,50 a 1,89</span></div>
+                                <div class='tooltip-item'><div class='tooltip-item-left'><span class='dot dot-red'></span><span class='tooltip-label'>RUIM</span></div><span class='tooltip-value'>acima de 1,90</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <svg class='card-icon' viewBox='0 0 24 24' width='16' height='16' fill='currentColor'><path d='M12 2.69l5.66 5.66a8 8 0 11-11.31 0z'/></svg>
+                </div>
+            </div>
+            <div class='card-value-area'>
+                <span class='card-value'>" & FORMAT(_WUE_Valor, "0.00") & "</span>
+                <span class='badge' style='" & _WUE_Badge_Style & "'>" & _WUE_Class & "</span>
+            </div>
+            <div class='variation " & _WUE_Var_ColorClass & "'>
+                " & _WUE_Var_Icon & "
+                <span>" & _WUE_Var_Text & "</span>
+            </div>
+            <div class='card-footer'>
+                <span class='card-target'>Target < 0.50</span>
+                <svg class='sparkline' viewBox='0 0 60 20'><path d='M0,18 Q20,18 30,12 T60,15' fill='none' stroke='#fcd34d' stroke-width='1.5'/></svg>
+            </div>
+        </div>
+
+        <!-- CARD CUE -->
+        <div class='card'>
+            <div class='card-header'>
+                <span class='card-title'>CUE (CARBON USAGE)</span>
+                <div class='header-actions'>
+                    <div class='info-container'>
+                        <div class='info-btn'><svg viewBox='0 0 24 24' width='14' height='14' fill='currentColor'><path d='M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'/></svg></div>
+                        <div class='tooltip'>
+                            <div class='tooltip-header'>Métricas e Classificação</div>
+                            <div class='tooltip-list'>
+                                <div class='tooltip-item'><div class='tooltip-item-left'><span class='dot dot-blue'></span><span class='tooltip-label'>EFICIENTE</span></div><span class='tooltip-value'>até 0,10</span></div>
+                                <div class='tooltip-item'><div class='tooltip-item-left'><span class='dot dot-yellow'></span><span class='tooltip-label'>REGULAR</span></div><span class='tooltip-value'>0,11 a 0,49</span></div>
+                                <div class='tooltip-item'><div class='tooltip-item-left'><span class='dot dot-red'></span><span class='tooltip-label'>INEFICIENTE</span></div><span class='tooltip-value'>acima de 0,50</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <svg class='card-icon' viewBox='0 0 24 24' width='16' height='16' fill='currentColor'><path d='M21.5,8A10.8,10.8,0,0,0,16.2,3.1,6.5,6.5,0,0,0,12,2a6.4,6.4,0,0,0-4.2,1.1A10.8,10.8,0,0,0,2.5,8,12.7,12.7,0,0,0,1.2,14.6a5.2,5.2,0,0,0,3.3,4.9,1.1,1.1,0,0,0,.4.1,2.8,2.8,0,0,0,2.1-.6l3.4-3.4V21a1,1,0,0,0,2,0V14.6l3.4,3.4a2.8,2.8,0,0,0,2.1.6,1.1,1.1,0,0,0,.4-.1,5.2,5.2,0,0,0,3.3-4.9A12.7,12.7,0,0,0,21.5,8Z'/></svg>
+                </div>
+            </div>
+            <div class='card-value-area'>
+                <span class='card-value'>" & FORMAT(_CUE_Valor, "0.00") & "</span>
+                <span class='badge' style='" & _CUE_Badge_Style & "'>" & _CUE_Class & "</span>
+            </div>
+            <div class='variation " & _CUE_Var_ColorClass & "'>
+                " & _CUE_Var_Icon & "
+                <span>" & _CUE_Var_Text & "</span>
+            </div>
+            <div class='card-footer'>
+                <span class='card-target'>Target < 0.10</span>
+                <svg class='sparkline' viewBox='0 0 60 20'><path d='M0,15 Q15,15 30,10 L45,15 L60,5' fill='none' stroke='#7dd3fc' stroke-width='1.5'/></svg>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- BARRA INFERIOR (Localização) -->
+    <div class='location-bar'>
+        <div class='loc-left'>
+            <div class='loc-label-area'>
+                <svg viewBox='0 0 24 24' width='16' height='16' fill='#c81e35'><path d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z'/></svg>
+                <span class='loc-label'>LOCALIZAÇÃO:</span>
+            </div>
+            <span class='loc-badge'>" & _Localizacao & "</span>
+        </div>
+        <div class='loc-right'>
+            <div class='status-dot'></div>
+            <span class='status-text'>ONLINE</span>
+        </div>
+    </div>
+</div>
+"
+
+RETURN _CSS & _HTML

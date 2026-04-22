@@ -1,0 +1,317 @@
+HTML_Dashboard_DataCenter = 
+
+// =========================================================================
+// 1. SUBSTITUA OS VALORES ABAIXO PELAS SUAS MEDIDAS DO POWER BI
+// DICA: Agora o DAX calcula o % (Pct) e o Disponível automaticamente!
+// Insira apenas suas medidas ou números brutos nas variáveis "_Num".
+// =========================================================================
+
+// --- COLUNA 1: ESPAÇO FÍSICO ---
+VAR vOcupGeral_Usado_Num = 68 
+VAR vOcupGeral_Total_Num = 100
+VAR vOcupGeral_Pct = ROUND(DIVIDE(vOcupGeral_Usado_Num, vOcupGeral_Total_Num, 0) * 100, 0)
+VAR vOcupGeral_Usado = vOcupGeral_Usado_Num & "%"
+VAR vOcupGeral_Total = vOcupGeral_Total_Num & "%"
+VAR vOcupGeral_Disp = (vOcupGeral_Total_Num - vOcupGeral_Usado_Num) & "%"
+
+VAR vArea_Usado_Num = 8160
+VAR vArea_Total_Num = 12000
+VAR vArea_Pct = ROUND(DIVIDE(vArea_Usado_Num, vArea_Total_Num, 0) * 100, 0)
+VAR vArea_Usado = FORMAT(vArea_Usado_Num, "#,##0")
+VAR vArea_Total = FORMAT(vArea_Total_Num, "#,##0")
+VAR vArea_Disp = FORMAT(vArea_Total_Num - vArea_Usado_Num, "#,##0")
+
+VAR vRacks_Usado_Num = 525
+VAR vRacks_Total_Num = 2500
+VAR vRacks_Pct = ROUND(DIVIDE(vRacks_Usado_Num, vRacks_Total_Num, 0) * 100, 0)
+VAR vRacks_Usado = FORMAT(vRacks_Usado_Num, "#,##0")
+VAR vRacks_Total = FORMAT(vRacks_Total_Num, "#,##0")
+VAR vRacks_Disp = FORMAT(vRacks_Total_Num - vRacks_Usado_Num, "#,##0")
+
+VAR vEquipInstalados = FORMAT(15420, "#,##0")
+VAR vEquipDesinstalados = FORMAT(230, "#,##0")
+
+// --- COLUNA 2: ENERGIA ---
+VAR vCarga_Usado_Num = 85
+VAR vCarga_Total_Num = 100
+VAR vCarga_Pct = ROUND(DIVIDE(vCarga_Usado_Num, vCarga_Total_Num, 0) * 100, 0)
+VAR vCarga_Usado = vCarga_Usado_Num & "%"
+VAR vCarga_Total = vCarga_Total_Num & "%"
+VAR vCarga_Disp = (vCarga_Total_Num - vCarga_Usado_Num) & "%"
+
+VAR vGeradores_Usado_Num = 4500
+VAR vGeradores_Total_Num = 5000
+VAR vGeradores_Pct = ROUND(DIVIDE(vGeradores_Usado_Num, vGeradores_Total_Num, 0) * 100, 0)
+VAR vGeradores_Usado = FORMAT(vGeradores_Usado_Num, "#,##0")
+VAR vGeradores_Total = FORMAT(vGeradores_Total_Num, "#,##0")
+VAR vGeradores_Disp = FORMAT(vGeradores_Total_Num - vGeradores_Usado_Num, "#,##0")
+
+VAR vUPS_Usado_Num = 3400
+VAR vUPS_Total_Num = 4000
+VAR vUPS_Pct = ROUND(DIVIDE(vUPS_Usado_Num, vUPS_Total_Num, 0) * 100, 0)
+VAR vUPS_Usado = FORMAT(vUPS_Usado_Num, "#,##0")
+VAR vUPS_Total = FORMAT(vUPS_Total_Num, "#,##0")
+VAR vUPS_Disp = FORMAT(vUPS_Total_Num - vUPS_Usado_Num, "#,##0")
+
+VAR vConsumoTotal = FORMAT(12500, "#,##0")
+VAR vConsumoTI = FORMAT(8200, "#,##0")
+VAR vDiesel = FORMAT(15000, "#,##0") & " L"
+
+// --- COLUNA 3: REFRIGERAÇÃO ---
+VAR vUsoTR_Usado_Num = 3200
+VAR vUsoTR_Total_Num = 4444
+VAR vUsoTR_Pct = ROUND(DIVIDE(vUsoTR_Usado_Num, vUsoTR_Total_Num, 0) * 100, 0)
+VAR vUsoTR_Usado = FORMAT(vUsoTR_Usado_Num, "#,##0")
+VAR vUsoTR_Total = FORMAT(vUsoTR_Total_Num, "#,##0")
+VAR vUsoTR_Disp = FORMAT(vUsoTR_Total_Num - vUsoTR_Usado_Num, "#,##0")
+
+VAR vCapAC_Usado_Num = 3200
+VAR vCapAC_Total_Num = 4500
+VAR vCapAC_Pct = ROUND(DIVIDE(vCapAC_Usado_Num, vCapAC_Total_Num, 0) * 100, 0)
+VAR vCapAC_Usado = FORMAT(vCapAC_Usado_Num, "#,##0")
+VAR vCapAC_Total = FORMAT(vCapAC_Total_Num, "#,##0")
+VAR vCapAC_Disp = FORMAT(vCapAC_Total_Num - vCapAC_Usado_Num, "#,##0")
+
+VAR vConsumoEleAC = "1.250 MWh"
+VAR vConsumoAgua = "450 m³/dia"
+
+// =========================================================================
+// 2. CSS (ESTILOS VISUAIS)
+// =========================================================================
+VAR vCSS = "
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f4f6f8; padding: 20px; width: 100vw; height: 100vh; display: flex; overflow-y: auto; overflow-x: hidden; }
+    .dashboard-container { display: flex; width: 100%; height: 100%; gap: 15px; flex-wrap: wrap; }
+    .card { flex: 1; min-width: 280px; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
+    
+    .card-header { padding: 10px 15px; color: #ffffff; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; flex-shrink: 0; }
+    .card-header svg { width: 16px; height: 16px; fill: currentColor; }
+    .card-body { padding: 12px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex: 1; }
+    
+    .theme-red .card-header { background: linear-gradient(90deg, #c13849 0%, #ea5b72 100%); }
+    .theme-blue .card-header { background: linear-gradient(90deg, #264cb4 0%, #527eeb 100%); }
+    .theme-teal .card-header { background: linear-gradient(90deg, #368a96 0%, #4db5be 100%); }
+    
+    .metric { display: flex; flex-direction: column; gap: 5px; padding: 8px 10px; background: #f4f6f9; border-radius: 6px; }
+    .metric-top { display: flex; justify-content: space-between; align-items: flex-end; }
+    .metric-title { font-size: 10px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+    .metric-percent { font-size: 14px; font-weight: 700; }
+    
+    .theme-red .metric-percent { color: #c13849; }
+    .theme-blue .metric-percent { color: #264cb4; }
+    .theme-teal .metric-percent { color: #368a96; }
+    
+    .progress-bar { height: 6px; border-radius: 3px; background-color: #e2e6ea; box-shadow: inset 0 1px 2px rgba(0,0,0,0.08); width: 100%; overflow: hidden; position: relative; }
+    .progress-fill { height: 100%; border-radius: 3px; position: absolute; left: 0; top: 0; transition: width 0.5s ease-in-out; }
+    
+    .theme-red .progress-fill { background: linear-gradient(90deg, #c13849 0%, #ea5b72 100%); box-shadow: 0 1px 4px rgba(193,56,73,0.4); }
+    .theme-blue .progress-fill { background: linear-gradient(90deg, #264cb4 0%, #527eeb 100%); box-shadow: 0 1px 4px rgba(38,76,180,0.4); }
+    .theme-teal .progress-fill { background: linear-gradient(90deg, #368a96 0%, #4db5be 100%); box-shadow: 0 1px 4px rgba(54,138,150,0.4); }
+    
+    .metric-details { display: flex; justify-content: space-between; font-size: 9px; color: #999; }
+    .metric-details span { font-weight: 600; color: #666; }
+    
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto; }
+    .info-box { padding: 8px 10px; background: #f4f6f9; border-radius: 6px; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+    .info-box.full { grid-column: span 2; }
+    .info-title { font-size: 9px; font-weight: 700; color: #888; text-transform: uppercase; }
+    .info-value { font-size: 13px; font-weight: 700; }
+    
+    .theme-red .info-value { color: #c13849; }
+    .theme-blue .info-value { color: #264cb4; }
+    .theme-teal .info-value { color: #368a96; }
+    
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
+</style>
+"
+
+
+// =========================================================================
+// 3. CONSTRUÇÃO DAS COLUNAS HTML 
+// (Juntando o texto base com as Variáveis DAX que você preencheu acima)
+// =========================================================================
+
+VAR vHtmlCol1 = "
+<div class='card theme-red'>
+    <div class='card-header'>
+        <svg viewBox='0 0 24 24'><path d='M21,16H3V4H21M21,2H3C1.89,2 1,2.89 1,4V16A2,2 0 0,0 3,18H21A2,2 0 0,0 23,16V4C23,2.89 22.1,2 21,2M1,20V22H23V20H1Z' /></svg>
+        Espaço Físico
+    </div>
+    <div class='card-body'>
+        <div class='metric'>
+            <div class='metric-top'>
+                <span class='metric-title'>Ocupação Geral</span>
+                <span class='metric-percent'>" & vOcupGeral_Pct & "%</span>
+            </div>
+            <div class='progress-bar'><div class='progress-fill' style='width: " & vOcupGeral_Pct & "%;'></div></div>
+            <div class='metric-details'>
+                <div>Usado: <span>" & vOcupGeral_Usado & "</span></div>
+                <div>Total: <span>" & vOcupGeral_Total & "</span></div>
+                <div>Disp: <span>" & vOcupGeral_Disp & "</span></div>
+            </div>
+        </div>
+
+        <div class='metric'>
+            <div class='metric-top'>
+                <span class='metric-title'>Área Total (m²)</span>
+                <span class='metric-percent'>" & vArea_Pct & "%</span>
+            </div>
+            <div class='progress-bar'><div class='progress-fill' style='width: " & vArea_Pct & "%;'></div></div>
+            <div class='metric-details'>
+                <div>Usado: <span>" & vArea_Usado & "</span></div>
+                <div>Total: <span>" & vArea_Total & "</span></div>
+                <div>Disp: <span>" & vArea_Disp & "</span></div>
+            </div>
+        </div>
+
+        <div class='metric'>
+            <div class='metric-top'>
+                <span class='metric-title'>Racks (Vertical)</span>
+                <span class='metric-percent'>" & vRacks_Pct & "%</span>
+            </div>
+            <div class='progress-bar'><div class='progress-fill' style='width: " & vRacks_Pct & "%;'></div></div>
+            <div class='metric-details'>
+                <div>Usado: <span>" & vRacks_Usado & "</span></div>
+                <div>Total: <span>" & vRacks_Total & "</span></div>
+                <div>Disp: <span>" & vRacks_Disp & "</span></div>
+            </div>
+        </div>
+
+        <div class='info-grid'>
+            <div class='info-box'>
+                <span class='info-title'>Equip. Instalados</span>
+                <span class='info-value' style='color: #333;'>" & vEquipInstalados & "</span>
+            </div>
+            <div class='info-box'>
+                <span class='info-title'>Desinstalados</span>
+                <span class='info-value' style='color: #333;'>" & vEquipDesinstalados & "</span>
+            </div>
+        </div>
+    </div>
+</div>
+"
+
+VAR vHtmlCol2 = "
+<div class='card theme-blue'>
+    <div class='card-header'>
+        <svg viewBox='0 0 24 24'><path d='M7,2V13H10V22L17,10H13L17,2H7Z' /></svg>
+        Energia
+    </div>
+    <div class='card-body'>
+        <div class='metric'>
+            <div class='metric-top'>
+                <span class='metric-title'>Carga Geral</span>
+                <span class='metric-percent'>" & vCarga_Pct & "%</span>
+            </div>
+            <div class='progress-bar'><div class='progress-fill' style='width: " & vCarga_Pct & "%;'></div></div>
+            <div class='metric-details'>
+                <div>Usado: <span>" & vCarga_Usado & "</span></div>
+                <div>Total: <span>" & vCarga_Total & "</span></div>
+                <div>Disp: <span>" & vCarga_Disp & "</span></div>
+            </div>
+        </div>
+
+        <div class='metric'>
+            <div class='metric-top'>
+                <span class='metric-title'>Geradores (KVA)</span>
+                <span class='metric-percent'>" & vGeradores_Pct & "%</span>
+            </div>
+            <div class='progress-bar'><div class='progress-fill' style='width: " & vGeradores_Pct & "%;'></div></div>
+            <div class='metric-details'>
+                <div>Usado: <span>" & vGeradores_Usado & "</span></div>
+                <div>Total: <span>" & vGeradores_Total & "</span></div>
+                <div>Disp: <span>" & vGeradores_Disp & "</span></div>
+            </div>
+        </div>
+
+        <div class='metric'>
+            <div class='metric-top'>
+                <span class='metric-title'>UPS (KVA)</span>
+                <span class='metric-percent'>" & vUPS_Pct & "%</span>
+            </div>
+            <div class='progress-bar'><div class='progress-fill' style='width: " & vUPS_Pct & "%;'></div></div>
+            <div class='metric-details'>
+                <div>Usado: <span>" & vUPS_Usado & "</span></div>
+                <div>Total: <span>" & vUPS_Total & "</span></div>
+                <div>Disp: <span>" & vUPS_Disp & "</span></div>
+            </div>
+        </div>
+
+        <div class='info-grid'>
+            <div class='info-box'>
+                <span class='info-title'>Consumo Total</span>
+                <span class='info-value'>" & vConsumoTotal & "</span>
+            </div>
+            <div class='info-box'>
+                <span class='info-title'>Consumo TI</span>
+                <span class='info-value'>" & vConsumoTI & "</span>
+            </div>
+            <div class='info-box full' style='flex-direction: row; justify-content: space-between; align-items: center;'>
+                <span class='info-title'>Diesel (Mês)</span>
+                <span class='info-value'>" & vDiesel & "</span>
+            </div>
+        </div>
+    </div>
+</div>
+"
+
+VAR vHtmlCol3 = "
+<div class='card theme-teal'>
+    <div class='card-header'>
+        <svg viewBox='0 0 24 24'><path d='M2.5 11h14c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3h1.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5h-14v1.5zm0 4h17c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3h1.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5h-17v1.5zm0 4h12c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3h1.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5h-12v1.5z'/></svg>
+        Refrigeração
+    </div>
+    <div class='card-body'>
+        <div class='metric'>
+            <div class='metric-top'>
+                <span class='metric-title'>Uso TR</span>
+                <span class='metric-percent'>" & vUsoTR_Pct & "%</span>
+            </div>
+            <div class='progress-bar'><div class='progress-fill' style='width: " & vUsoTR_Pct & "%;'></div></div>
+            <div class='metric-details'>
+                <div>Carga: <span>" & vUsoTR_Usado & "</span></div>
+                <div>Total: <span>" & vUsoTR_Total & "</span></div>
+                <div>Disp: <span>" & vUsoTR_Disp & "</span></div>
+            </div>
+        </div>
+
+        <div class='metric'>
+            <div class='metric-top'>
+                <span class='metric-title'>Capacidade AC (TR)</span>
+                <span class='metric-percent'>" & vCapAC_Pct & "%</span>
+            </div>
+            <div class='progress-bar'><div class='progress-fill' style='width: " & vCapAC_Pct & "%;'></div></div>
+            <div class='metric-details'>
+                <div>Usado: <span>" & vCapAC_Usado & "</span></div>
+                <div>Total: <span>" & vCapAC_Total & "</span></div>
+                <div>Disp: <span>" & vCapAC_Disp & "</span></div>
+            </div>
+        </div>
+
+        <div class='info-grid'>
+            <div class='info-box full'>
+                <span class='info-title'>Consumo Elétrico AC (Eficiência Energética)</span>
+                <span class='info-value'>" & vConsumoEleAC & "</span>
+            </div>
+            <div class='info-box full'>
+                <span class='info-title'>Consumo de Água (Reuso descontado)</span>
+                <span class='info-value'>" & vConsumoAgua & "</span>
+            </div>
+        </div>
+    </div>
+</div>
+"
+
+// =========================================================================
+// 4. RESULTADO FINAL: JUNTA TUDO E RETORNA
+// =========================================================================
+RETURN 
+    vCSS & 
+    "<div class='dashboard-container'>" & 
+    vHtmlCol1 & 
+    vHtmlCol2 & 
+    vHtmlCol3 & 
+    "</div>"
