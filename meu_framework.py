@@ -1,3 +1,12 @@
+# v0.2.7 Claude
+#   [v0.2.7] FIX: _get_decile_stats — bordas ±inf ao aplicar cut_edges do treino
+#                 no teste/OOT. Sem isso, scores fora do range do treino viravam
+#                 NaN silenciosos e sumiam da agregação dos decis (bug visual sutil
+#                 no gráfico de estabilidade).
+#   [v0.2.7] CHANGE: Removida a visão "Cada dataset usa seus próprios percentis"
+#                    do relatório (gráfico de decil de performance). Mantido apenas
+#                    o gráfico de estabilidade (treino e teste seguindo as mesmas
+#                    bordas do treino), que é o que importa pra monitoramento.
 # v0.2.6 Claude
 #   [v0.2.6] CHANGE: oot_psi_filter agora usa method="traditional" (linspace +
 #                    1e-10) por DEFAULT — alinhado com calculate_csi e padrão
@@ -146,7 +155,7 @@ try:
 except ImportError:
     _HAS_TARGET_ENCODER = False
 
-_FRAMEWORK_VERSION = "0.2.6"
+_FRAMEWORK_VERSION = "0.2.7"
 
 # Cores canônicas para treino/teste — alta distinção visual e para daltônicos
 _COLOR_TRAIN = "#F06000"  # laranja-forte
@@ -4077,7 +4086,12 @@ class AutoClassificationEngine:
             cut_edges[0] -= 1e-6
             cut_edges[-1] += 1e-6
         else:
-            cut_edges = np.unique(cut_edges)
+            # [v0.2.7] Bordas extremas como ±inf — pega scores do OOT/teste fora
+            # do range do treino (mais altos que o max ou mais baixos que o min)
+            # e atribui à faixa extrema correta. Sem isso, viram NaN silencioso.
+            cut_edges = np.unique(cut_edges).astype(float)
+            cut_edges[0] = -np.inf
+            cut_edges[-1] = np.inf
             n_labels = len(cut_edges) - 1
             df["decile"] = pd.cut(
                 df["prob"],
@@ -4085,6 +4099,11 @@ class AutoClassificationEngine:
                 include_lowest=True,
                 labels=range(1, n_labels + 1),
                 ordered=True,
+            )
+            # Rede de segurança: nenhum caso pode virar NaN com bordas ±inf
+            assert df["decile"].notna().all(), (
+                "Casos viraram NaN ao aplicar cut_edges do treino — não deveria "
+                "acontecer com bordas ±inf. Verifique se há scores NaN no input."
             )
 
         stats = (
@@ -4369,8 +4388,8 @@ class AutoClassificationEngine:
 
         ref_for_overfit = ref_name if ref_name in results else None
 
-        fig = plt.figure(figsize=(24, 26), constrained_layout=True)
-        gs = fig.add_gridspec(5, 4)
+        fig = plt.figure(figsize=(24, 22), constrained_layout=True)
+        gs = fig.add_gridspec(4, 4)
 
         ax_metrics = fig.add_subplot(gs[0, :2])
         self._plot_scorecard(ax_metrics, results)
@@ -4514,17 +4533,7 @@ class AutoClassificationEngine:
                 fontsize=10,
             )
 
-        ax_decil_perf = fig.add_subplot(gs[3, :])
-        self._plot_decil(
-            ax=ax_decil_perf,
-            decile_data=decile_indep,
-            results=results,
-            colors=colors,
-            bins=bins,
-            title_mode="performance",
-        )
-
-        ax_decil_stab = fig.add_subplot(gs[4, :3])
+        ax_decil_stab = fig.add_subplot(gs[3, :3])
         self._plot_decil(
             ax=ax_decil_stab,
             decile_data=decile_fixed,
@@ -4534,7 +4543,7 @@ class AutoClassificationEngine:
             title_mode="estabilidade",
         )
 
-        ax_ks = fig.add_subplot(gs[4, 3])
+        ax_ks = fig.add_subplot(gs[3, 3])
         self._plot_ks_curve(ax_ks, results["Teste"])
 
         oof_tag = " | Treino = OOF" if use_oof else ""
