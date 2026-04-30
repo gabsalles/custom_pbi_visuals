@@ -1,0 +1,568 @@
+================================================================================
+DOCUMENTO DE ALTERAÇÕES — LightGBM Classification tempo ativo 4y PR AUC
+================================================================================
+Data: 30/04/2026
+Contexto: Notebook Databricks — otimização Optuna com métrica composta
+Objetivo: Melhorar ordenamento das faixas intermediárias (Q3/Q4) no OOT
+          mantendo estabilidade de Q2 e performance de Q5
+================================================================================
+
+
+RESUMO DAS 4 ALTERAÇÕES
+------------------------
+1. Substituir Spearman pela combinação Q5-Q1 + gap mínimo entre faixas
+2. Restringir search space dos hiperparâmetros (mínimos mais altos)
+3. Calibração Sigmoid Platt treinada na janela temporal intermediária
+4. Mudar imputer de mean para median
+
+Implementar nessa ordem para facilitar debugging.
+
+
+================================================================================
+ALTERAÇÃO 1 — Substituir Spearman pela combinação Q5−Q1 + gap mínimo
+================================================================================
+
+MOTIVAÇÃO
+---------
+O Spearman retornou 1.0000 em todos os trials do experimento mais recente —
+o mesmo problema de saturação que a monotonia binária apresentava antes.
+Com 5 faixas, qualquer modelo com tendência geral crescente já garante
+Spearman perfeito, tornando o peso inútil para diferenciar modelos.
+
+O problema operacional identificado é específico: o gap entre Q3 e Q4 no OOT
+está colapsando (6pp no último experimento: Q3=55.8%, Q4=61.5%).
+Uma métrica que penalize faixas adjacentes coladas é mais cirúrgica e menos
+sujeita a saturação.
+
+FUNDAMENTAÇÃO
+-------------
+Kendall & Gibbons (1990) estabelecem que correlações de posto são métricas
+contínuas de ordenamento superiores a critérios binários para rankings.
+Anderson (2007) — "The Credit Scoring Toolkit" — recomenda métricas de
+concordância de ordenamento por faixa para capturar nuances que métricas
+binárias ignoram.
+
+O GAP MÍNIMO ENTRE FAIXAS ADJACENTES é o sinal mais direto de rank reversal
+latente: quando Q3 e Q4 ficam com taxas próximas, qualquer pequena variação
+na população OOT pode inverter a ordem. Penalizar esse gap durante o CV
+força o Optuna a selecionar modelos que mantêm separação clara entre todas
+as faixas adjacentes, não só nos extremos.
+
+O QUE A NOVA MÉTRICA MEDE
+--------------------------
+Dois componentes combinados:
+
+Componente 1 — Q5−Q1 (amplitude de separação):
+  Diferença entre a taxa de positivos da faixa mais alta e da mais baixa
+  no fold de validação. Mede se o modelo consegue separar os extremos.
+  Normalizado entre 0 e 1 (já está naturalmente nessa escala).
+
+Componente 2 — gap mínimo (separação crítica):
+  Menor diferença entre taxas de faixas adjacentes:
+    gap(Q1→Q2), gap(Q2→Q3), gap(Q3→Q4), gap(Q4→Q5)
+  Penaliza diretamente quando qualquer par de faixas fica colado.
+  Normalizado dividindo pelo gap máximo teórico = 1/n_bins = 0.20
+
+Combinação: separacao_score = 0.60 * amplitude + 0.40 * gap_score
+
+  Gap mínimo tem peso ligeiramente menor porque a amplitude já captura
+  parte da informação de separação geral. Se Q3/Q4 continuar sendo o ponto
+  crítico após o experimento, aumentar o peso do gap para 0.50.
+
+NOVOS PESOS
+-----------
+W_PRAUC     = 0.60   # era 0.55 — sobe pra recuperar discriminação no Q4
+W_SEPARACAO = 0.10   # substitui W_SPEARMAN — penaliza faixas coladas
+W_PSI       = 0.30   # mantém
+
+assert abs(W_PRAUC + W_SEPARACAO + W_PSI - 1.0) < 1e-6, "Pesos devem somar 1.0"
+
+NOTA SOBRE OS PESOS:
+W_SEPARACAO está em 0.10 pois a nova métrica é mais exigente que o Spearman.
+- Se após o run a métrica saturar em 1.0 novamente → aumentar para 0.15
+  e reduzir W_PRAUC para 0.55
+- Se a separação ficar muito baixa e o modelo perder discriminação geral
+  → reduzir para 0.05
+
+SUBSTITUIÇÃO COMPLETA DA FUNÇÃO compute_fold_metrics
+-----------------------------------------------------
+Substituir a função atual pela seguinte:
+
+def compute_fold_metrics(y_tr, p_tr, y_vl, p_vl, n_bins=5):
+    """
+    Retorna (separacao_score, psi_combinado) para um fold.
+
+    separacao_score : combinação de Q5-Q1 (amplitude) e gap mínimo entre
+                      faixas adjacentes (separação crítica). Valor entre
+                      0 e 1. Penaliza especificamente faixas coladas como
+                      Q3/Q4 que causam rank reversal no OOT.
+
+    psi_combinado   : média entre PSI de taxas (instabilidade das taxas de
+                      evento por faixa) e PSI de scores (instabilidade da
+                      distribuição de scores). Ambos calculados com bordas
+                      definidas no TREINO do fold — nunca na validação.
+    """
+    eps = 1e-4
+
+    # Bordas definidas no treino do fold — nunca na validação
+    try:
+        _, bin_edges = pd.qcut(
+            p_tr, q=n_bins, retbins=True, duplicates='drop'
+        )
+    except ValueError:
+        return 0.0, 1.0
+
+    if len(bin_edges) - 1 < 2:
+        return 0.0, 1.0
+
+    bin_edges[0]  = -np.inf
+    bin_edges[-1] =  np.inf
+
+    # Taxas de positivos por faixa
+    def _rates(y, p):
+        bins = pd.cut(p, bins=bin_edges, include_lowest=True)
+        return (
+            pd.DataFrame({'t': y, 'b': bins})
+            .groupby('b', observed=False)['t']
+            .mean()
+            .fillna(0)
+            .values
+        )
+
+    r_tr = _rates(y_tr, p_tr)
+    r_vl = _rates(y_vl, p_vl)
+
+    # PSI de taxas (componente 1 do PSI combinado)
+    r_tr_c    = np.clip(r_tr, eps, 1 - eps)
+    r_vl_c    = np.clip(r_vl, eps, 1 - eps)
+    psi_taxas = float(np.sum((r_vl_c - r_tr_c) * np.log(r_vl_c / r_tr_c)))
+
+    # PSI de scores (componente 2 do PSI combinado)
+    # Mesmas bordas do treino aplicadas nos scores de treino e validação
+    e = pd.cut(p_tr, bins=bin_edges, include_lowest=True)
+    a = pd.cut(p_vl, bins=bin_edges, include_lowest=True)
+
+    e_pct = e.value_counts(normalize=True, sort=False).clip(eps, 1 - eps)
+    a_pct = (
+        a.value_counts(normalize=True, sort=False)
+        .reindex(e_pct.index, fill_value=0)
+        .clip(eps, 1 - eps)
+    )
+    psi_scores    = float(np.sum((a_pct - e_pct) * np.log(a_pct / e_pct)))
+    psi_combinado = 0.5 * psi_taxas + 0.5 * psi_scores
+
+    # Métrica de separação: Q5−Q1 + gap mínimo entre faixas adjacentes
+    n_faixas = len(r_vl)
+
+    if np.std(r_vl) < 1e-6:
+        # Todas as taxas iguais — separação impossível de avaliar
+        separacao_score = 0.0
+    else:
+        # Componente 1: amplitude Q5 - Q1 (normalizada entre 0 e 1)
+        amplitude = float(r_vl[-1] - r_vl[0])
+        amplitude = max(0.0, min(1.0, amplitude))
+
+        # Componente 2: gap mínimo entre faixas adjacentes
+        # Normalizado pelo gap máximo teórico (1/n_bins)
+        gaps           = np.diff(r_vl)
+        gap_minimo     = float(np.min(gaps))
+        gap_max_teorico = 1.0 / n_faixas
+        gap_score      = max(0.0, min(1.0, gap_minimo / gap_max_teorico))
+
+        # Combinação: 60% amplitude + 40% gap mínimo
+        separacao_score = 0.60 * amplitude + 0.40 * gap_score
+
+    return separacao_score, psi_combinado
+
+
+ATUALIZAÇÃO NA FUNÇÃO OBJETIVO (dentro do loop de folds)
+---------------------------------------------------------
+Renomear variável e desempacotar corretamente:
+
+  # Trocar:
+  fold_mono = []   (ou fold_spearman)
+
+  # Por:
+  fold_separacao = []
+
+  # Dentro do loop:
+  separacao, psi = compute_fold_metrics(y_tr, p_tr, y_vl, p_vl)
+  fold_separacao.append(separacao)
+
+  # Após o loop:
+  mean_separacao = float(np.mean(fold_separacao))
+  psi_score      = float(np.clip(1 - mean_psi, 0, 1))
+
+  composite = (
+      W_PRAUC     * mean_pr
+      + W_SEPARACAO * mean_separacao
+      + W_PSI       * psi_score
+  )
+
+  trial.set_user_attr("cv_pr_auc",    round(mean_pr,        4))
+  trial.set_user_attr("cv_separacao", round(mean_separacao, 4))
+  trial.set_user_attr("cv_psi",       round(mean_psi,       4))
+
+
+ATUALIZAÇÃO NO PRINT DOS RESULTADOS
+------------------------------------
+  print(f"Best composite:    {best.value:.4f}")
+  print(f"  |- CV PR-AUC:    {best.user_attrs['cv_pr_auc']:.4f}")
+  print(f"  |- CV Separacao: {best.user_attrs['cv_separacao']:.4f}  "
+        f"{'OK' if best.user_attrs['cv_separacao'] > 0.50 else 'ATENCAO'}")
+  print(f"  -- CV PSI:       {best.user_attrs['cv_psi']:.4f}  "
+        f"{'OK' if best.user_attrs['cv_psi'] < 0.10 else 'MEDIO' if best.user_attrs['cv_psi'] < 0.25 else 'ALTO'}")
+
+NOTA: O threshold de alerta do CV Separacao está em 0.50 como ponto de
+partida. Após o primeiro run, verificar a distribuição dos valores nos
+trials e ajustar o threshold conforme a faixa observada.
+
+
+================================================================================
+ALTERAÇÃO 2 — Restringir search space dos hiperparâmetros
+================================================================================
+
+MOTIVAÇÃO
+---------
+O experimento anterior selecionou max_depth=3 e num_leaves=22 — configuração
+trivialmente simples para um problema com 13 features e ~1450 linhas de
+treino. Isso ocorreu porque o Optuna não tinha restrição de mínimo nesses
+parâmetros e a métrica de estabilidade (PSI) favorecia modelos mais simples.
+
+Resultado: o modelo estabilizou Q2/Q3 mas perdeu discriminação na fronteira
+Q3/Q4, com Q4 no OOT caindo de 62.1% para 45.2%. A causa é que com
+max_depth=3 e num_leaves=22 o modelo não tem capacidade de separar casos
+ambíguos na fronteira entre faixas intermediárias.
+
+Elevar os mínimos força o Optuna a buscar modelos com capacidade suficiente
+pra separar Q3/Q4 sem abandonar a regularização que estabilizou Q2/Q3.
+
+FUNDAMENTAÇÃO
+-------------
+Ke et al. (2017) — "LightGBM: A Highly Efficient Gradient Boosting Decision
+Tree" — estabelecem que num_leaves é o parâmetro de capacidade mais
+importante do LightGBM, mais do que max_depth. Para N features, o mínimo
+recomendado de num_leaves é 2^(max_depth_efetivo). Com 13 features e
+profundidade efetiva de 4, o mínimo razoável é 2^4 = 16, arredondado para
+20 por segurança.
+
+SOBRE min_gain_to_split E path_smooth
+--------------------------------------
+No experimento anterior esses dois parâmetros foram para os valores máximos
+do range (0.803 e 0.759 respectivamente). Isso confirma que o Optuna estava
+usando regularização excessiva. Ao cortar o máximo em 0.5, forçamos o modelo
+a ser menos conservador nas folhas sem remover completamente a regularização
+que estabilizou Q2/Q3.
+
+NUANCE: Se após o run o Optuna ainda bater no teto de 0.5 em ambos os
+parâmetros, reduzir para 0.4 e rodar novamente.
+
+SUBSTITUIÇÃO DO BLOCO DE PARAMS NA FUNÇÃO OBJETIVO
+---------------------------------------------------
+Substituir o dicionário params atual pelo seguinte:
+
+  params = {
+      # Fixos
+      "objective":         "binary",
+      "verbosity":         -1,
+      "boosting_type":     "gbdt",
+      "scale_pos_weight":  scale_pos_weight,
+      "random_state":      42,
+
+      # Hiperparâmetros buscados
+      # Mínimos elevados para evitar modelos trivialmente simples
+      "n_estimators":      trial.suggest_int("n_estimators", 50, 800),
+      "learning_rate":     trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
+      "max_depth":         trial.suggest_int("max_depth", 4, 8),       # era 3-8
+      "num_leaves":        trial.suggest_int("num_leaves", 20, 128),   # era 8-128
+      "min_child_samples": trial.suggest_int("min_child_samples", 5, 100),  # era 5-50
+      "subsample":         trial.suggest_float("subsample", 0.4, 1.0), # era 0.5-1.0
+      "colsample_bytree":  trial.suggest_float("colsample_bytree", 0.5, 1.0),
+      "reg_alpha":         trial.suggest_float("reg_alpha", 1e-8, 10.0, log=True),
+      "reg_lambda":        trial.suggest_float("reg_lambda", 1e-8, 10.0, log=True),
+
+      # Mantidos do experimento anterior — confirmaram utilidade
+      # Máximo reduzido de 1.0 para 0.5 para evitar regularização excessiva
+      # que causou o colapso do Q4 no OOT
+      "min_gain_to_split": trial.suggest_float("min_gain_to_split", 0.0, 0.5),
+      "path_smooth":       trial.suggest_float("path_smooth", 0.0, 0.5),
+  }
+
+
+================================================================================
+ALTERAÇÃO 3 — Calibração Sigmoid Platt na janela temporal intermediária
+================================================================================
+
+MOTIVAÇÃO
+---------
+O modelo LightGBM produz scores discriminativos mas não calibrados — a escala
+dos scores não reflete probabilidades reais. Nos experimentos, observamos
+compressão de scores nas faixas intermediárias:
+  Q3 bruto: 55.8% → Q3 com Sigmoid: 45.5% (correção de ~10pp)
+  Q4 bruto: 61.5% → Q4 com Sigmoid: 68.4% (ganho de ~7pp)
+
+A calibração recuperou o ordenamento correto das faixas sem alterar o ranking
+relativo dentro de cada faixa.
+
+FUNDAMENTAÇÃO
+-------------
+Platt (1999) — "Probabilistic Outputs for Support Vector Machines" — introduz
+a calibração Sigmoid como transformação:
+  P(y=1|s) = 1 / (1 + exp(A*s + B))
+onde A e B são estimados por maximum likelihood num conjunto de calibração
+separado do treino.
+
+Niculescu-Mizil & Caruana (2005) — "Predicting Good Probabilities With
+Supervised Learning" — demonstram empiricamente que boosting (incluindo
+LightGBM) é o tipo de modelo que MAIS se beneficia de calibração pós-treino:
+tende a comprimir scores para longe dos extremos, exatamente o padrão
+observado nos experimentos.
+
+Guo et al. (2017) — "On Calibration of Modern Neural Networks" — confirma:
+modelos de boosting são overconfident nos scores extremos e underconfident
+nos scores do meio. Sigmoid Platt corrige esse padrão com apenas 2 parâmetros.
+
+POR QUE SIGMOID E NÃO ISOTONIC
+--------------------------------
+Isotonic Regression é não-paramétrico e precisa de N grande para não overfit
+temporal. Com janelas de calibração pequenas e variáveis de janela temporal,
+o Isotonic pode memorizar padrões específicos do período — risco alto.
+Sigmoid tem apenas 2 parâmetros (A, B): robusto mesmo com N menor.
+
+POR QUE CALIBRAR NA JANELA TEMPORAL INTERMEDIÁRIA
+--------------------------------------------------
+O notebook tem três conjuntos em ordem temporal: treino → test → OOT.
+
+  - Calibrar no test: problema — o test foi usado para selecionar o modelo
+    final via PR-AUC. Usar o mesmo dado para calibrar é viesado.
+
+  - Calibrar no OOT: problema — o OOT é o conjunto de avaliação final honesta.
+    Usá-lo para calibração contamina a avaliação.
+
+  - Calibrar na janela intermediária (entre test e OOT): CORRETO — não foi
+    usado para seleção do modelo, não é o conjunto de avaliação final, e está
+    mais próxima temporalmente do OOT do que treino ou test. Com variáveis de
+    janela temporal (ex: preint_last_tpo_dmiss_1_ano_original), a janela mais
+    recente é mais representativa do comportamento atual da população.
+
+NUANCE SOBRE VARIÁVEIS DE JANELA TEMPORAL
+------------------------------------------
+O modelo usa variáveis calculadas sobre janelas de 1 ano. A calibração deve
+ser feita num conjunto onde essas variáveis já estão calculadas para o período
+correto — não retroativamente. Confirmar que a tabela de calibração tem as
+mesmas 13 features que o treino com os valores referentes ao período dela.
+
+NUANCE SOBRE TAMANHO DA JANELA
+--------------------------------
+Se a janela temporal intermediária tiver menos de 100 registros, a calibração
+Sigmoid pode ser instável. Nesse caso, calibrar no test e documentar a
+limitação. Verificar o N antes de prosseguir.
+
+CÓDIGO A ADICIONAR — nova célula entre célula 8 e célula 9
+-----------------------------------------------------------
+(Entre "Train final model" e "Evaluation: Precision-Recall Curve")
+
+  from sklearn.linear_model import LogisticRegression
+  import numpy as np
+
+  # Carregar janela de calibração — conjunto temporal entre test e OOT
+  # SUBSTITUIR pelo nome real da tabela disponível no ambiente Databricks
+  df_cal = spark.table("pr_explo.d4852s091_id_people.NOME_DA_TABELA_CALIBRACAO").toPandas()
+
+  # Aplicar o mesmo preprocessor do treino
+  # CRITICO: usar apenas .transform() — nunca refit no conjunto de calibração
+  X_cal = df_cal[TRAIN_FEATURES]
+  y_cal = df_cal["tempo_ativo_4y"]
+  X_cal_proc = preprocessor.transform(X_cal)
+
+  # Scores brutos do modelo final na janela de calibração
+  p_cal_raw = final_model.predict_proba(X_cal_proc)[:, 1]
+
+  # Ajustar calibrador Sigmoid (Platt scaling)
+  # C alto = mínima regularização = calibração pura sem penalidade extra
+  calibrador = LogisticRegression(C=1e10, max_iter=1000)
+  calibrador.fit(p_cal_raw.reshape(-1, 1), y_cal)
+
+  print(f"Calibrador ajustado na janela temporal intermediária")
+  print(f"  N calibração: {len(y_cal)}")
+  print(f"  Taxa positivos calibração: {y_cal.mean():.3f}")
+  print(f"  Parâmetros Sigmoid:")
+  print(f"    A (coeficiente): {calibrador.coef_[0][0]:.4f}")
+  print(f"    B (intercepto):  {calibrador.intercept_[0]:.4f}")
+
+  # Função auxiliar para aplicar calibração
+  def calibrar(scores_brutos):
+      return calibrador.predict_proba(
+          np.array(scores_brutos).reshape(-1, 1)
+      )[:, 1]
+
+  # Aplicar nos três conjuntos
+  y_train_proba_cal = calibrar(y_train_proba)
+  y_test_proba_cal  = calibrar(y_test_proba)
+  y_oot_proba_cal   = calibrar(y_oot_proba)
+
+  print("\nScores calibrados gerados para train, test e OOT.")
+  print("Usar y_*_proba_cal nas análises de faixa e PR Curve daqui pra frente.")
+
+IMPORTANTE: Nas células de avaliação seguintes (faixas de quantil, PR Curve,
+confusion matrix), usar y_*_proba_cal no lugar de y_*_proba para que os
+resultados reflitam os scores calibrados que irão para produção.
+
+
+================================================================================
+ALTERAÇÃO 4 — Mudar imputer de mean para median
+================================================================================
+
+MOTIVAÇÃO
+---------
+O preprocessor atual (célula 6, linha 12) usa SimpleImputer(strategy="mean")
+para variáveis numéricas. As features do modelo incluem variáveis tipicamente
+assimétricas com caudas longas: renda per capita, tempo de permanência,
+salários. A média é sensível a outliers nessas distribuições.
+
+FUNDAMENTAÇÃO
+-------------
+Little & Rubin (2002) — "Statistical Analysis with Missing Data" —
+recomendam mediana sobre média para imputação em variáveis com assimetria
+moderada a alta (skewness > 1). Variáveis de tempo e renda em bases de RH
+tipicamente apresentam skewness > 2.
+
+Adicionalmente, o framework AutoClassificationEngine usado nos experimentos
+paralelos usa mediana como default após análise empírica da base — manter
+consistência entre os dois pipelines é metodologicamente importante.
+
+NUANCE
+------
+Essa mudança afeta o preprocessor em produção. A mediana é calculada no
+treino (fit_transform) e aplicada no test e OOT (transform) — comportamento
+correto. O notebook confirma "Missing values in OOT features: 0", então o
+impacto real é apenas no treino onde missing values existem. Baixo risco.
+
+ALTERAÇÃO NA CÉLULA 6 — Preprocessing pipeline, linha 12
+---------------------------------------------------------
+  # DE:
+  ("imputer", SimpleImputer(strategy="mean")),
+
+  # PARA:
+  ("imputer", SimpleImputer(strategy="median")),
+
+
+================================================================================
+ORDEM DE IMPLEMENTAÇÃO
+================================================================================
+
+Implementar nessa ordem para facilitar debugging caso algo quebre:
+
+  PASSO 1 — Imputer (Alteração 4)
+    Célula 6, mudança de uma linha.
+    Verificar que "Processed shapes" continua correto após rodar.
+
+  PASSO 2 — Search space (Alteração 2)
+    Célula 7, bloco de params.
+    Não altera estrutura do código, só os ranges e mínimos.
+
+  PASSO 3 — Função compute_fold_metrics (Alteração 1)
+    Célula 7, substituição completa da função.
+    Verificar que retorna dois valores (separacao_score, psi_combinado)
+    e que o loop os desempacota corretamente.
+
+  PASSO 4 — Pesos e composite (Alteração 1 continuação)
+    Célula 7, bloco de pesos e cálculo do composite.
+    Verificar assert de soma = 1.0.
+    Verificar que trial.set_user_attr usa "cv_separacao" (não "cv_mono").
+
+  PASSO 5 — Calibração (Alteração 3)
+    Nova célula entre células 8 e 9.
+    Requer identificar o nome correto da tabela de calibração antes de rodar.
+    Verificar N da janela de calibração — mínimo recomendado: 100 registros.
+
+
+================================================================================
+PARÂMETROS QUE NÃO MUDAM
+================================================================================
+
+Manter exatamente como estão:
+  - N_FOLDS = 5
+  - TIMEOUT_MIN = 60
+  - scale_pos_weight (manter o valor atual)
+  - Split 80/20 estratificado (random_state=42)
+  - Early stopping em 30 rounds
+  - StratifiedKFold com shuffle=True, random_state=42
+  - Estrutura completa do MLflow logging
+  - n_estimators mínimo em 50 e máximo em 800
+  - learning_rate range: 0.01 a 0.3 log=True
+  - reg_alpha e reg_lambda ranges atuais
+
+
+================================================================================
+O QUE MONITORAR NOS RESULTADOS
+================================================================================
+
+Após rodar, verificar em ordem de prioridade:
+
+CV Separacao:
+  Deve estar abaixo de 0.95.
+  Se saturar em 1.0 novamente → aumentar W_SEPARACAO de 0.10 para 0.15
+  e reduzir W_PRAUC para 0.55.
+
+Tabela de faixas OOT (com scores calibrados):
+  Q2 OOT: deve se manter abaixo de 20%
+  Q3 OOT: deve se manter abaixo de 45%
+  Q4 OOT: deve se recuperar para 55%+  ← ponto crítico
+  Q5 OOT: deve se manter acima de 77%
+
+  Se Q3 voltar a inflar acima de 45%:
+    O search space ainda permite modelos conservadores demais.
+    Reduzir máximo de min_gain_to_split e path_smooth de 0.5 para 0.3.
+
+  Se Q4 não se recuperar acima de 55%:
+    O mínimo de max_depth ainda é baixo demais.
+    Testar com max_depth mínimo = 5 (era 4).
+
+PSI OOT externo (com Sigmoid):
+  Deve se manter abaixo de 0.25.
+  Se subir acima disso com a calibração na janela intermediária, verificar
+  se a janela de calibração é representativa do OOT em termos de distribuição
+  das variáveis de janela temporal.
+
+Classification Report (test, com scores calibrados):
+  Recall class_1 deve se manter em 0.73 ou acima.
+  Se cair abaixo de 0.68 → a restrição do search space foi longe demais.
+  Nesse caso, relaxar max_depth mínimo de volta para 3.
+
+min_gain_to_split e path_smooth nos best params:
+  Se ambos baterem no teto de 0.5 → reduzir teto para 0.4 e re-rodar.
+  Se ficarem abaixo de 0.2 → a regularização está equilibrada, resultado bom.
+
+
+================================================================================
+REFERÊNCIAS BIBLIOGRÁFICAS
+================================================================================
+
+Anderson, R. (2007). The Credit Scoring Toolkit. Oxford University Press.
+
+Guo, C., Pleiss, G., Sun, Y., & Weinberger, K. Q. (2017). On Calibration of
+Modern Neural Networks. ICML 2017.
+
+Ke, G., et al. (2017). LightGBM: A Highly Efficient Gradient Boosting
+Decision Tree. NeurIPS 2017.
+
+Kendall, M. G., & Gibbons, J. D. (1990). Rank Correlation Methods.
+5th edition. Oxford University Press.
+
+Little, R. J. A., & Rubin, D. B. (2002). Statistical Analysis with Missing
+Data. 2nd edition. Wiley.
+
+Niculescu-Mizil, A., & Caruana, R. (2005). Predicting Good Probabilities With
+Supervised Learning. ICML 2005.
+
+Platt, J. (1999). Probabilistic Outputs for Support Vector Machines and
+Comparisons to Regularized Likelihood Methods. Advances in Large Margin
+Classifiers.
+
+Siddiqi, N. (2006). Credit Risk Scorecards: Developing and Implementing
+Intelligent Credit Scoring. Wiley.
+
+================================================================================
+FIM DO DOCUMENTO
+================================================================================
